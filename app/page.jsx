@@ -85,13 +85,13 @@ export default function Home() {
             </div>
           </div>
           <form onSubmit={submitSearch} className="relative w-full sm:w-72" role="search">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={17} />
+            <Search className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-400" size={17} />
             <input
               aria-label="搜尋城市"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="搜尋城市..."
-              className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50 pl-10 pr-3 text-sm outline-none transition focus:border-[#1769aa] focus:ring-2 focus:ring-blue-100"
+              className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50 pr-3 pl-10 text-sm transition outline-none focus:border-[#1769aa] focus:ring-2 focus:ring-blue-100"
             />
           </form>
         </div>
@@ -111,7 +111,7 @@ export default function Home() {
 
         <section className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="mb-2 flex items-center gap-1.5 text-sm font-medium text-slate-500">
+            <p className="mb-2 flex items-center gap-1.5 text-sm font-medium text-slate-600">
               <MapPin size={15} className="text-[#1769aa]" />
               目前位置
             </p>
@@ -124,9 +124,11 @@ export default function Home() {
                 <ChevronDown size={16} />
               </button>
             </div>
-            <p className="mt-1 text-sm text-slate-500">{today} · {now}</p>
+            <p className="mt-1 text-sm text-slate-600">
+              {today} · {now}
+            </p>
           </div>
-          <div className="flex items-center gap-2 text-sm text-slate-500">
+          <div className="flex items-center gap-2 text-sm text-slate-600">
             <span className="size-2 rounded-full bg-emerald-500" />
             資料更新於 5 分鐘前
           </div>
@@ -144,7 +146,7 @@ export default function Home() {
           <WeatherTip />
         </section>
 
-        <footer className="mt-10 pb-2 text-center text-xs text-slate-400">
+        <footer className="mt-10 pb-2 text-center text-xs text-slate-600">
           weather-board · 為Wehelp團隊打造的天氣資訊工具
         </footer>
       </div>
