@@ -29,6 +29,6 @@ next-env.d.ts
 # local notes (not for the team repo)
 NOTES-*.md
 
-# next.js auto-generated agent instruction files
+# next.js auto-generated files
 AGENTS.md
 CLAUDE.md
