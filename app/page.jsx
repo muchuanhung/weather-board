@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ChevronDown, MapPin, Search, Sunrise } from 'lucide-react'
 
 import {
@@ -33,10 +33,25 @@ export default function Home() {
     weekday: 'long',
   })
 
-  const now = new Date().toLocaleTimeString('zh-TW', {
-    hour: 'numeric',
-    minute: '2-digit',
-  })
+  const [now, setNow] = useState(
+    new Date().toLocaleTimeString('zh-TW', {
+      hour: 'numeric',
+      minute: '2-digit',
+    })
+  )
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNow(
+        new Date().toLocaleTimeString('zh-TW', {
+          hour: 'numeric',
+          minute: '2-digit',
+        })
+      )
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [])
 
   function submitSearch(event) {
     event.preventDefault()
