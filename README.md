@@ -6,7 +6,7 @@ Wehelp 三人小組的氣象看板。
 
 | 環境 | 連結 |
 | --- | --- |
-| 線上 | （部署後貼上） |
+| 線上 | https://weather-board-liart.vercel.app/ |
 | 本機 | http://localhost:3000 |
 
 ## 本週必做
