@@ -47,15 +47,38 @@ GET /api/weather?city=Taipei
 
 `hourlyForecast` / `dailyForecast` 沿用 `lib/weather-data.js` 的欄位名稱；真實資料可能有 `null`。前端需接入 API 資料及缺值顯示。`current` 共 11 個欄位。
 
+### 畫面欄位對應
+
+對照 `components/weather/weather-sections.jsx` 的設計稿：
+
+| 畫面位置 | API 欄位 |
+| --- | --- |
+| 現在天氣卡片 · 大字溫度 | `current.temperature` |
+| 現在天氣卡片 · 天氣描述 | `current.description` |
+| 現在天氣卡片 · 天氣圖示 | `current.kind` |
+| 現在天氣卡片 · 體感 | `current.feelsLike` |
+| 現在天氣卡片 · 今日最高 | `dailyForecast` 中 `day === "今天"` 那筆的 `high` |
+| 現在天氣卡片 · 今日最低 | 同一筆的 `low` |
+| 現在天氣卡片 · 濕度 | `current.humidity` |
+| 現在天氣卡片 · 風速 | `current.windSpeed` |
+| 現在天氣卡片 · 氣壓 | `current.pressure` |
+| 現在天氣卡片 · 時間標籤 | `current.updatedAt` |
+| 日出日落卡片 · 日出 | `current.sunrise` |
+| 日出日落卡片 · 日落 | `current.sunset` |
+| 逐時預報 | `hourlyForecast` |
+| 逐日預報 | `dailyForecast` |
+
+`current.uvIndex` 目前設計稿沒有對應位置。今日最高／最低溫沒有放進 `current`，因為那是預報值而非即時觀測值。
+
 ### 欄位與來源
 
 - `city`：解析後的官方縣市名稱。
 - `query`：去掉首尾空白後的查詢；使用預設城市時為 `Taipei`。
-- `updatedAt`：與 `current.updatedAt` 相同，優先使用觀測時間，其次為預報第一筆時間，兩者皆無時使用伺服器現在時間；不是所有資料集的共同更新時間。
+- `updatedAt`：與 `current.updatedAt` 相同，優先使用觀測時間，其次為預報第一筆時間，兩者皆無時使用伺服器現在時間；不是所有資料集的共同更新時間。格式為 ISO 8601 含時區（`2026-09-22T16:10:00+08:00`），不是可直接顯示的文字，由前端自行格式化，例如 `new Date(updatedAt).toLocaleTimeString('zh-TW', { hour: 'numeric', minute: '2-digit' })`。保留時間戳是為了讓「資料更新於 N 分鐘前」這類相對時間也能計算。
 - `current.temperature`：優先使用觀測溫度，缺值時使用逐時預報第一筆。
 - `current.feelsLike`：逐時預報第一筆體感溫度，缺值時使用 `current.temperature`。
 - `current.humidity`：優先使用觀測濕度，缺值時使用逐時預報第一筆。
-- `current.description` / `kind`：優先使用觀測天氣描述，其次為預報；描述皆缺少時為 `—`。`kind` 為 `sun`／`partly`／`cloud`／`rain`／`moon`。目前無法判讀的描述仍使用預設日夜圖示，不代表已確認晴天。
+- `current.description` / `kind`：優先使用觀測天氣描述，其次為預報；描述皆缺少時為 `—`。`kind` 為 `sun`／`partly`／`cloud`／`rain`／`moon`。目前無法判讀的描述仍使用預設日夜圖示，不代表已確認晴天。`description` 字數不固定：觀測用語較短（實測到 `晴`、`多雲`、`陰`、`陰有雨`、`陰有靄`），改用預報時較長（實測到 `晴時多雲`、`多雲時晴`、`多雲時陰`、`陰時多雲`、`多雲短暫陣雨`）。版面不要寫死寬度。
 - `current.windSpeed`／`pressure`／`uvIndex`：來自觀測站；風速為 km/h，氣壓為 hPa。溫度為 °C，濕度與降雨機率為百分比。
 - `current.sunrise`／`sunset`：來自獨立的日出日落資料集，格式 `HH:mm`，是否缺值與觀測站是否存在無直接關係。
 - `hourlyForecast`：預報資料前 8 筆，第一筆標籤為「現在」。這是預報第一筆，未保證與即時觀測時間相同。
@@ -111,6 +134,14 @@ TZ=UTC node --test app/api/weather/__tests__/weather.test.mjs
 pnpm exec next build --webpack
 ```
 
-自動測試使用模擬的 CWA 回應，涵蓋城市解析、日期分組、缺值及 200／400／502 回應；不等同真實 CWA 連線驗證。合併／部署前仍需使用已設定授權碼的環境執行真實請求並附回應範例。
+自動測試使用模擬的 CWA 回應，涵蓋城市解析、日期分組、缺值及 200／400／502 回應。
 
-真實連線驗證、PR 與部署進度統一記錄於 [TODO-backend.md](./TODO-backend.md)。
+真實 CWA 連線已於 9/22 在本機驗證完成，22 縣市全部回 200，查無城市回 400。實際回應範例見 [PR #4 留言](https://github.com/muchuanhung/weather-board/pull/4)。
+
+線上部署尚未驗證通過：Preview 部署目前回 502，原因是 Vercel 尚未設定 `CWA_API_KEY`。設定後重打下列網址應回 200：
+
+```
+https://weather-board-git-feat-weather-api-muchuanhungs-projects.vercel.app/api/weather?city=Taipei
+```
+
+部署與 PR 進度記錄於 [TODO-backend.md](./TODO-backend.md)。
