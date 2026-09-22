@@ -5,7 +5,7 @@ import { Activity, CalendarDays, Droplets, Gauge, Navigation, Sunrise, Sunset, W
 import { dailyForecast, hourlyForecast } from '@/lib/weather-data'
 import { HeroWeatherIcon, WeatherIcon } from './weather-icons'
 
-export function CurrentWeatherCard() {
+export function CurrentWeatherCard({ weather }) {
   return (
     <article className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1769aa] to-[#2f8bc4] p-6 text-white shadow-lg shadow-blue-100 sm:p-8">
       <div className="absolute -right-10 -top-20 size-64 rounded-full bg-white/10" />
@@ -18,7 +18,7 @@ export function CurrentWeatherCard() {
             <HeroWeatherIcon />
             <div>
               <div className="flex items-start">
-                <span className="text-7xl font-light tracking-tighter">28</span>
+                <span className="text-7xl font-light tracking-tighter">{weather.temperature}</span>
                 <span className="mt-2 text-3xl font-light">°</span>
               </div>
               <p className="text-lg font-medium">晴時多雲</p>
@@ -27,17 +27,17 @@ export function CurrentWeatherCard() {
         </div>
         <div className="text-left sm:text-right">
           <p className="text-sm text-blue-100">體感</p>
-          <p className="mt-1 text-2xl font-semibold">30°</p>
+          <p className="mt-1 text-2xl font-semibold">{weather.feelsLike}°</p>
           <p className="mt-5 text-sm text-blue-100">
-            今日最高 <strong className="text-white">30°</strong> · 最低 <strong className="text-white">25°</strong>
+          今日最高 <strong className="text-white">{weather.tempHigh}°</strong> · 最低 <strong className="text-white">{weather.tempLow}°</strong>
           </p>
         </div>
       </div>
 
       <div className="relative mt-10 grid grid-cols-3 divide-x divide-white/20 border-t border-white/20 pt-5">
-        <WeatherMetric icon={<Droplets />} label="濕度" value="72%" />
-        <WeatherMetric icon={<Wind />} label="風速" value="12 km/h" />
-        <WeatherMetric icon={<Gauge />} label="氣壓" value="1013 hPa" align="end" />
+      <WeatherMetric icon={<Droplets />} label="濕度" value={weather.humidity} />
+<WeatherMetric icon={<Wind />} label="風速" value={weather.wind} />
+<WeatherMetric icon={<Gauge />} label="氣壓" value={weather.pressure} align="end" />
       </div>
     </article>
   )
@@ -103,9 +103,8 @@ export function HourlyForecast() {
         {hourlyForecast.map((entry, index) => (
           <div
             key={entry.time}
-            className={`flex min-w-[82px] flex-1 flex-col items-center gap-3 border-r border-slate-100 px-2 last:border-0 ${
-              index === 0 ? 'text-[#1769aa]' : ''
-            }`}
+            className={`flex min-w-[82px] flex-1 flex-col items-center gap-3 border-r border-slate-100 px-2 last:border-0 ${index === 0 ? 'text-[#1769aa]' : ''
+              }`}
           >
             <span className="text-xs font-medium">{entry.time}</span>
             <WeatherIcon kind={entry.kind} size={30} />

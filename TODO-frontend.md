@@ -21,10 +21,10 @@
 
 ## 9/22（二）
 
-- [ ] Fork Host Repo，開分支 `feat/weather-ui`
+- [x] Fork Host Repo，開分支 `feat/weather-ui`
 - [ ] 跟後端對齊契約：元件 props／fetch 只吃 `lib/weather-data.js` 的資料形狀（或後端 export 的同一份）
-- [ ] 把 `CurrentWeatherCard`、`HourlyForecast`／`DailyForecast` 從寫死常數改成吃 props／state
-- [ ] 搜尋／切換城市：送出後打 `/api/weather?city=...`（先用假 fetch＋loading／error UI 也行）
+- [x] 把 `CurrentWeatherCard`、`HourlyForecast`／`DailyForecast` 從寫死常數改成吃 props／state
+- [x] 搜尋／切換城市：送出後打 `/api/weather?city=...`（先用假 fetch＋loading／error UI 也行）
 
 ## 9/23（三）
 
