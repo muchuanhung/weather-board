@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server'
+import { NextResponse } from 'next/server.js'
 
-import { resolveCity } from '@/lib/city-map'
-import { CwaError, fetchCurrentObservation, fetchHourlyForecast, fetchSunTimes, fetchWeeklyForecast } from '@/lib/cwa'
-import { buildCurrentWeather, buildDailyForecast, buildHourlyForecast } from '@/lib/weather-transform'
+import { resolveCity } from '../../../lib/city-map.js'
+import { CwaError, fetchCurrentObservation, fetchHourlyForecast, fetchSunTimes, fetchWeeklyForecast } from '../../../lib/cwa.js'
+import { buildCurrentWeather, buildDailyForecast, buildHourlyForecast } from '../../../lib/weather-transform.js'
 
 // GET /api/weather?city=Taipei
 //
@@ -46,17 +46,22 @@ export async function GET(request) {
     ])
 
     const current = buildCurrentWeather({ observation, hourlyLocation, sun })
+    const hourlyForecast = buildHourlyForecast(hourlyLocation)
+    const dailyForecast = buildDailyForecast(weeklyLocation)
+    if (!hourlyForecast.length || !dailyForecast.length) {
+      throw new CwaError('缺少必要的預報時段')
+    }
 
     return NextResponse.json({
       city: countyName,
       query: cityQuery,
       updatedAt: current.updatedAt,
       current,
-      hourlyForecast: buildHourlyForecast(hourlyLocation),
-      dailyForecast: buildDailyForecast(weeklyLocation),
+      hourlyForecast,
+      dailyForecast,
     })
-  } catch (error) {
-    const message = error instanceof CwaError ? error.message : '氣象資料取得失敗，請稍後再試'
+  } catch {
+    const message = '氣象資料取得失敗，請稍後再試'
     return NextResponse.json({ error: 'upstream_error', message }, { status: 502 })
   }
 }
