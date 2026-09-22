@@ -1,6 +1,6 @@
 # `/api/weather` 契約
 
-給前端串接用。對應程式：[`app/api/weather/route.js`](app/api/weather/route.js)。欄位與格式待統籌、前端確認，有意見請在 PR 留言。
+給前端串接用。對應程式：[`app/api/weather/route.js`](app/api/weather/route.js)。欄位跟格式還在跟統籌、前端對，想調整的地方都可以在 PR 底下討論。
 
 ## 請求
 
