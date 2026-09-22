@@ -16,9 +16,9 @@ import { HeroWeatherIcon, WeatherIcon } from './weather-icons'
 
 export function CurrentWeatherCard() {
   return (
-    <article className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1769aa] to-[#2f8bc4] p-6 text-white shadow-lg shadow-blue-100 sm:p-8">
-      <div className="absolute -top-20 -right-10 size-64 rounded-full bg-white/10" />
-      <div className="absolute right-20 -bottom-28 size-72 rounded-full bg-white/5" />
+    <article className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1769aa] to-[#1c76ac] p-6 text-white shadow-lg shadow-blue-100 sm:p-8">
+      <div className="absolute -top-20 -right-10 size-64 rounded-full bg-white/5" />
+      <div className="absolute right-20 -bottom-28 size-72 rounded-full bg-white/[0.03]" />
 
       <div className="relative flex flex-col justify-between gap-12 sm:flex-row sm:items-start">
         <div>
