@@ -26,9 +26,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# local notes (not for the team repo)
-NOTES-*.md
-
-# next.js auto-generated files
-AGENTS.md
-CLAUDE.md
+# playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/.playwright/
