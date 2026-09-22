@@ -124,7 +124,9 @@ export default function Home() {
                 <ChevronDown size={16} />
               </button>
             </div>
-            <p className="mt-1 text-sm text-slate-500">{today} · {now}</p>
+            <p className="mt-1 text-sm text-slate-600">
+              {today} · {now}
+            </p>
           </div>
           <div className="flex items-center gap-2 text-sm text-slate-600">
             <span className="size-2 rounded-full bg-emerald-500" />
