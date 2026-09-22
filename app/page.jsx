@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ChevronDown, MapPin, Search, Sunrise } from 'lucide-react'
 
 import {
@@ -16,11 +16,57 @@ export default function Home() {
   const [query, setQuery] = useState('')
   const [searched, setSearched] = useState(false)
 
+  const [currentWeather, setCurrentWeather] = useState({
+    temperature: 28,
+    feelsLike: 30,
+    tempHigh: 30,
+    tempLow: 25,
+    humidity: '72%',
+    wind: '12 km/h',
+    pressure: '1013 hPa',
+  })
+
+  const today = new Date().toLocaleDateString('zh-TW', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    weekday: 'long',
+  })
+
+  const [now, setNow] = useState(
+    new Date().toLocaleTimeString('zh-TW', {
+      hour: 'numeric',
+      minute: '2-digit',
+    })
+  )
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNow(
+        new Date().toLocaleTimeString('zh-TW', {
+          hour: 'numeric',
+          minute: '2-digit',
+        })
+      )
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [])
+
   function submitSearch(event) {
     event.preventDefault()
     const trimmed = query.trim()
     if (!trimmed) return
     setCity(trimmed)
+    setCurrentWeather({
+      temperature: 18,
+      feelsLike: 16,
+      tempHigh: 20,
+      tempLow: 14,
+      humidity: '90%',
+      wind: '25 km/h',
+      pressure: '1005 hPa',
+    })
     setSearched(true)
     setQuery('')
   }
@@ -55,7 +101,7 @@ export default function Home() {
         {searched && (
           <div className="mb-5 flex items-center justify-between rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
             <span>
-              目前顯示 <strong>{city}</strong> 的天氣。展示資料目前以台北為準。
+              目前顯示 <strong>{city}</strong> 的天氣。目前為展示資料，實際天氣待串接後端。
             </span>
             <button onClick={() => setSearched(false)} className="font-semibold underline">
               關閉
@@ -78,7 +124,7 @@ export default function Home() {
                 <ChevronDown size={16} />
               </button>
             </div>
-            <p className="mt-1 text-sm text-slate-600">星期一，2026年9月21日 · 下午 12:35</p>
+            <p className="mt-1 text-sm text-slate-500">{today} · {now}</p>
           </div>
           <div className="flex items-center gap-2 text-sm text-slate-600">
             <span className="size-2 rounded-full bg-emerald-500" />
@@ -87,7 +133,7 @@ export default function Home() {
         </section>
 
         <section className="grid gap-5 lg:grid-cols-[1.25fr_0.75fr]">
-          <CurrentWeatherCard />
+          <CurrentWeatherCard weather={currentWeather} />
           <SunCard />
         </section>
 
