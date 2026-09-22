@@ -26,6 +26,18 @@ export default function Home() {
     pressure: '1013 hPa',
   })
 
+  const today = new Date().toLocaleDateString('zh-TW', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    weekday: 'long',
+  })
+
+  const now = new Date().toLocaleTimeString('zh-TW', {
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+
   function submitSearch(event) {
     event.preventDefault()
     const trimmed = query.trim()
@@ -97,7 +109,7 @@ export default function Home() {
                 <ChevronDown size={16} />
               </button>
             </div>
-            <p className="mt-1 text-sm text-slate-500">星期一，2026年9月21日 · 下午 12:35</p>
+            <p className="mt-1 text-sm text-slate-500">{today} · {now}</p>
           </div>
           <div className="flex items-center gap-2 text-sm text-slate-500">
             <span className="size-2 rounded-full bg-emerald-500" />
