@@ -1,6 +1,6 @@
 # `/api/weather` 契約
 
-給前端（ssheep）串接用，也是跟統籌確認過的版本。對應程式：[`app/api/weather/route.js`](app/api/weather/route.js)。
+給前端串接用。對應程式：[`app/api/weather/route.js`](app/api/weather/route.js)。欄位與格式待統籌、前端確認，有意見請在 PR 留言。
 
 ## 請求
 
