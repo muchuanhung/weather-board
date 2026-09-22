@@ -3,3 +3,7 @@ pmOnFail: ignore
 minimumReleaseAgeExclude:
   - '@next/*'
   - next
+
+allowBuilds:
+  # eslint-config-next 依賴的原生模組解析器，不允許建置的話 ESLint 會退回 WASM 或直接壞掉
+  unrs-resolver: true
