@@ -1,0 +1,23 @@
+# 檔案認領見 README.md#檔案認領。
+# PR 碰到某區檔案時，GitHub 會自動 request 該區負責人 review。
+#
+# TODO（統籌）：把下面兩個佔位帳號換成實際的 GitHub handle，
+# 換之前 GitHub 會顯示 unknown owner，規則不生效。
+
+*                             @muchuanhung
+
+# A. 後端 — 莊宗霖
+/lib/weather-data.js          @BACKEND-GITHUB-HANDLE
+/app/api/                     @BACKEND-GITHUB-HANDLE
+
+# B. 前端 — 鍾旻瑞
+/app/page.jsx                 @FRONTEND-GITHUB-HANDLE
+/app/globals.css              @FRONTEND-GITHUB-HANDLE
+/components/weather/          @FRONTEND-GITHUB-HANDLE
+
+# C. 統籌 — 洪睦筌
+/.github/                     @muchuanhung
+/README.md                    @muchuanhung
+/TODO-*.md                    @muchuanhung
+/test/                        @muchuanhung
+/e2e/                         @muchuanhung
