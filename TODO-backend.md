@@ -22,10 +22,10 @@ API 串接規格見 [API-CONTRACT.md](./API-CONTRACT.md)。目前後端實作與
 
 ## 9/22（二）
 
-- [X] Fork Host Repo，開分支 `feat/weather-api`
-- [X] 與統籌確認 API 契約（query：`city`；response：現在天氣＋預報欄位，對齊 `lib/weather-data.js`）
-- [X] 選定資料源（CWA／Open-Meteo 等），申請／設定 API key（用 env，勿 commit）
-- [X] 建 `app/api/weather/route.js`：至少回台北 mock 或真資料其一，形狀先對
+- [x] Fork Host Repo，開分支 `feat/weather-api`
+- [x] 與統籌確認 API 契約（query：`city`；response：現在天氣＋預報欄位，對齊 `lib/weather-data.js`）
+- [x] 選定資料源（CWA／Open-Meteo 等），申請／設定 API key（用 env，勿 commit）
+- [x] 建 `app/api/weather/route.js`：至少回台北 mock 或真資料其一，形狀先對
 
 ## 9/23（三）
 

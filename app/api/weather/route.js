@@ -1,8 +1,18 @@
 import { NextResponse } from 'next/server.js'
 
 import { resolveCity } from '../../../lib/city-map.js'
-import { CwaError, fetchCurrentObservation, fetchHourlyForecast, fetchSunTimes, fetchWeeklyForecast } from '../../../lib/cwa.js'
-import { buildCurrentWeather, buildDailyForecast, buildHourlyForecast } from '../../../lib/weather-transform.js'
+import {
+  CwaError,
+  fetchCurrentObservation,
+  fetchHourlyForecast,
+  fetchSunTimes,
+  fetchWeeklyForecast,
+} from '../../../lib/cwa.js'
+import {
+  buildCurrentWeather,
+  buildDailyForecast,
+  buildHourlyForecast,
+} from '../../../lib/weather-transform.js'
 
 // GET /api/weather?city=Taipei
 //
@@ -28,7 +38,7 @@ export async function GET(request) {
         error: 'city_not_found',
         message: `找不到城市「${cityQuery}」，請用臺灣縣市名稱或常見英文拼音，例如 Taipei、Kaohsiung、台中。`,
       },
-      { status: 400 },
+      { status: 400 }
     )
   }
 

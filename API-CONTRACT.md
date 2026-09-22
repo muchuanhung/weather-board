@@ -51,22 +51,22 @@ GET /api/weather?city=Taipei
 
 對照 `components/weather/weather-sections.jsx` 的設計稿：
 
-| 畫面位置 | API 欄位 |
-| --- | --- |
-| 現在天氣卡片 · 大字溫度 | `current.temperature` |
-| 現在天氣卡片 · 天氣描述 | `current.description` |
-| 現在天氣卡片 · 天氣圖示 | `current.kind` |
-| 現在天氣卡片 · 體感 | `current.feelsLike` |
+| 畫面位置                | API 欄位                                          |
+| ----------------------- | ------------------------------------------------- |
+| 現在天氣卡片 · 大字溫度 | `current.temperature`                             |
+| 現在天氣卡片 · 天氣描述 | `current.description`                             |
+| 現在天氣卡片 · 天氣圖示 | `current.kind`                                    |
+| 現在天氣卡片 · 體感     | `current.feelsLike`                               |
 | 現在天氣卡片 · 今日最高 | `dailyForecast` 中 `day === "今天"` 那筆的 `high` |
-| 現在天氣卡片 · 今日最低 | 同一筆的 `low` |
-| 現在天氣卡片 · 濕度 | `current.humidity` |
-| 現在天氣卡片 · 風速 | `current.windSpeed` |
-| 現在天氣卡片 · 氣壓 | `current.pressure` |
-| 現在天氣卡片 · 時間標籤 | `current.updatedAt` |
-| 日出日落卡片 · 日出 | `current.sunrise` |
-| 日出日落卡片 · 日落 | `current.sunset` |
-| 逐時預報 | `hourlyForecast` |
-| 逐日預報 | `dailyForecast` |
+| 現在天氣卡片 · 今日最低 | 同一筆的 `low`                                    |
+| 現在天氣卡片 · 濕度     | `current.humidity`                                |
+| 現在天氣卡片 · 風速     | `current.windSpeed`                               |
+| 現在天氣卡片 · 氣壓     | `current.pressure`                                |
+| 現在天氣卡片 · 時間標籤 | `current.updatedAt`                               |
+| 日出日落卡片 · 日出     | `current.sunrise`                                 |
+| 日出日落卡片 · 日落     | `current.sunset`                                  |
+| 逐時預報                | `hourlyForecast`                                  |
+| 逐日預報                | `dailyForecast`                                   |
 
 `current.uvIndex` 目前設計稿沒有對應位置。今日最高／最低溫沒有放進 `current`，因為那是預報值而非即時觀測值。
 
@@ -103,7 +103,10 @@ GET /api/weather?city=Taipei
 查無城市 → 400：
 
 ```json
-{ "error": "city_not_found", "message": "找不到城市「XXX」，請用臺灣縣市名稱或常見英文拼音，例如 Taipei、Kaohsiung、台中。" }
+{
+  "error": "city_not_found",
+  "message": "找不到城市「XXX」，請用臺灣縣市名稱或常見英文拼音，例如 Taipei、Kaohsiung、台中。"
+}
 ```
 
 逐時／一週預報請求失敗、缺少必要預報時段、資料無法處理，或伺服器未設定授權碼 → 502：
