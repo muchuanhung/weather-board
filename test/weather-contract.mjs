@@ -20,10 +20,16 @@ function assertNumber(value, where) {
   if (!Number.isFinite(value)) fail(`${where} 要是數字，收到 ${JSON.stringify(value)}`)
 }
 
+/** API-CONTRACT：部分數值欄位為 number | null */
+function assertNumberOrNull(value, where) {
+  if (value === null) return
+  assertNumber(value, where)
+}
+
 export function assertCurrent(current) {
   if (!current || typeof current !== 'object') fail('current 要是物件')
-  assertNumber(current.temperature, 'current.temperature')
-  assertNumber(current.feelsLike, 'current.feelsLike')
+  assertNumberOrNull(current.temperature, 'current.temperature')
+  assertNumberOrNull(current.feelsLike, 'current.feelsLike')
   assertText(current.description, 'current.description')
   assertKind(current.kind, 'current')
   assertText(current.updatedAt, 'current.updatedAt')
@@ -34,7 +40,7 @@ export function assertHourly(hourly) {
   hourly.forEach((item, i) => {
     const where = `hourly[${i}]`
     assertText(item.time, `${where}.time`)
-    assertNumber(item.temperature, `${where}.temperature`)
+    assertNumberOrNull(item.temperature, `${where}.temperature`)
     assertKind(item.kind, where)
   })
 }
@@ -45,12 +51,14 @@ export function assertDaily(daily) {
     const where = `daily[${i}]`
     assertText(item.day, `${where}.day`)
     assertText(item.date, `${where}.date`)
-    assertNumber(item.high, `${where}.high`)
-    assertNumber(item.low, `${where}.low`)
-    if (item.high < item.low) fail(`${where} 的 high(${item.high}) 小於 low(${item.low})`)
+    assertNumberOrNull(item.high, `${where}.high`)
+    assertNumberOrNull(item.low, `${where}.low`)
+    if (Number.isFinite(item.high) && Number.isFinite(item.low) && item.high < item.low) {
+      fail(`${where} 的 high(${item.high}) 小於 low(${item.low})`)
+    }
     assertKind(item.kind, where)
-    assertNumber(item.rainChance, `${where}.rainChance`)
-    if (item.rainChance < 0 || item.rainChance > 100) {
+    assertNumberOrNull(item.rainChance, `${where}.rainChance`)
+    if (item.rainChance !== null && (item.rainChance < 0 || item.rainChance > 100)) {
       fail(`${where}.rainChance 要落在 0–100，收到 ${item.rainChance}`)
     }
   })

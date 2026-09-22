@@ -15,8 +15,8 @@ test.describe('GET /api/weather 契約', () => {
 
     const body = await res.json()
     assertCurrent(body.current)
-    assertHourly(body.hourly)
-    assertDaily(body.daily)
+    assertHourly(body.hourlyForecast)
+    assertDaily(body.dailyForecast)
   })
 
   test('查不到的城市要回明確錯誤，不能回 200 空資料', async ({ request }) => {
