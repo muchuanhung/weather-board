@@ -15,17 +15,15 @@ Wehelp 三人小組的氣象看板。
 
 | 角色 | 負責人 | 切塊                | 本週交出                                                                             |
 | ---- | ------ | ------------------- | ------------------------------------------------------------------------------------ |
-| 後端 | 莊宗霖 | A. 資料與 API       | 氣象資料取得，整理成前端好用的格式。                               |
+| 後端 | 莊宗霖 | A. 資料與 API       | 氣象資料取得，整理成前端好用的格式。                                                 |
 | 前端 | 鍾旻瑞 | B. 介面與互動       | 頁面結構、列表／詳情、接上資料、基本操作（搜尋、切換城市）；版面／色票／RWD 一併收斂 |
-| 統籌 | 洪睦筌 | C. 規格／排程／交付 | 開規格書、確認排程、跑 CI、Discord 推播、部署、README 連結、截圖、簡報、整合 demo |
-
+| 統籌 | 洪睦筌 | C. 規格／排程／交付 | 開規格書、確認排程、跑 CI、Discord 推播、部署、README 連結、截圖、簡報、整合 demo    |
 
 ### 待辦清單
 
 - 統籌：[TODO-lead.md](./TODO-lead.md)（洪睦筌）
 - 後端：[TODO-backend.md](./TODO-backend.md)（莊宗霖）
 - 前端：[TODO-frontend.md](./TODO-frontend.md)（鍾旻瑞）
-
 
 ## 本機
 
@@ -38,10 +36,9 @@ pnpm dev
 
 ## 天氣 API
 
-`GET /api/weather?city=Taipei`，資料源是 [Open-Meteo](https://open-meteo.com/)（免申請 API key）。
+`GET /api/weather?city=Taipei`，資料源為中央氣象署（CWA）；契約見 [`API-CONTRACT.md`](./API-CONTRACT.md)（`current` / `hourlyForecast` / `dailyForecast`）。
 
-回傳形狀對齊 [`test/weather-contract.mjs`](./test/weather-contract.mjs)：`current` / `hourly` / `daily`。
-城市支援二十個縣市，`台北`、`臺北市`、`Taipei` 都吃得下；查不到回 400 並列出支援清單。
+Discord 推播另走 Open-Meteo（`lib/weather-source.js`），不經這支 route。
 
 ## Discord 推播
 
