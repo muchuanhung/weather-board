@@ -50,7 +50,7 @@ API 串接規格見 [API-CONTRACT.md](./API-CONTRACT.md)。目前後端實作與
 ## 9/24（四）中午前
 
 - [x] 開 PR 進 Host，跟前端對過欄位後合併；衝突只動 A 區檔案（PR #4 已合併）
-- [x] 確認部署環境變數已設好，線上 API 能打（`CWA_API_KEY` 已設，線上 22 縣市實測可用）
+- [x] 確認部署環境變數已設好，線上 API 能打（`CWA_API_KEY` 已設；production 實測 Taipei、高雄回 200。22 縣市全測是在本機完成，線上僅抽驗）
 
 ## 本週驗收
 
