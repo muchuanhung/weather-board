@@ -80,11 +80,15 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
 
-      - name: 確認 CWA_API_KEY 已設定
+      # Fork PR 不會注入 repo secrets；拿不到 key 時仍跑 UI smoke／a11y，
+      # API 契約測試在 e2e/api-contract.spec.js 內自行 skip。
+      - name: 檢查 CWA_API_KEY
         run: |
           if [ -z "$CWA_API_KEY" ]; then
-            echo "::error::Repo Secrets 缺少 CWA_API_KEY。Settings → Secrets and variables → Actions → New repository secret"
-            exit 1
+            echo "::notice::CWA_API_KEY 不可用（fork PR 或未設定 Actions secret）。UI smoke 照跑；API 契約會 skip。"
+            if [ "${{ github.event_name }}" = "push" ]; then
+              echo "::warning::push 工作流建議在 Settings → Secrets → Actions 設定 CWA_API_KEY，否則 API e2e 不會跑。"
+            fi
           fi
 
       - name: Cache Playwright browsers

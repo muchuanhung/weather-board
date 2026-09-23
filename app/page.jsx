@@ -15,18 +15,25 @@ import { WeatherAgentPanel } from '@/components/weather/weather-agent-panel'
 export default function Home() {
   const [city, setCity] = useState('Taipei')
   const [query, setQuery] = useState('')
-  const [searched, setSearched] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [errorMsg, setErrorMsg] = useState('')
 
   const [currentWeather, setCurrentWeather] = useState({
     temperature: 28,
     feelsLike: 30,
-    tempHigh: 30,
-    tempLow: 25,
-    humidity: '72%',
-    wind: '12 km/h',
-    pressure: '1013 hPa',
+    description: '晴時多雲',
+    kind: 'sun',
+    humidity: '72',
+    windSpeed: '12',
+    pressure: '1013',
+    uvIndex: 5,
+    sunrise: '--:--',
+    sunset: '--:--',
+    updatedAt: '',
   })
 
+  const [daily, setDaily] = useState([])
+  const [hourly, setHourly] = useState([])
   const [today, setToday] = useState('')
   const [now, setNow] = useState('')
 
@@ -55,22 +62,54 @@ export default function Home() {
     return () => clearInterval(timer)
   }, [])
 
+  useEffect(() => {
+    fetch('/api/weather?city=Taipei')
+      .then((res) => res.json())
+      .then((data) => {
+        // 502／缺 key 時保留初始 state，避免 current 變 undefined 把畫面炸掉
+        if (data.error || !data.current) return
+        setCurrentWeather(data.current)
+        setDaily(data.dailyForecast ?? [])
+        setHourly(data.hourlyForecast ?? [])
+      })
+      .catch(() => {})
+  }, [])
+
   function submitSearch(event) {
     event.preventDefault()
     const trimmed = query.trim()
     if (!trimmed) return
     setCity(trimmed)
-    setCurrentWeather({
-      temperature: 18,
-      feelsLike: 16,
-      tempHigh: 20,
-      tempLow: 14,
-      humidity: '90%',
-      wind: '25 km/h',
-      pressure: '1005 hPa',
-    })
-    setSearched(true)
+    setLoading(true)
+    setErrorMsg('')
+    fetch(`/api/weather?city=${encodeURIComponent(trimmed)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.error || !data.current) {
+          setErrorMsg(data.message || '氣象資料取得失敗，請稍後再試')
+        } else {
+          setCurrentWeather(data.current)
+          setDaily(data.dailyForecast ?? [])
+          setHourly(data.hourlyForecast ?? [])
+        }
+        setLoading(false)
+      })
+      .catch(() => {
+        setErrorMsg('氣象資料取得失敗，請稍後再試')
+        setLoading(false)
+      })
     setQuery('')
+  }
+
+  const todayForecast = daily.find((entry) => entry.day === '今天')
+
+  let updatedLabel = '資料更新中'
+  if (currentWeather.updatedAt) {
+    const updatedTime = new Date(currentWeather.updatedAt).toLocaleTimeString('zh-TW', {
+      hour: 'numeric',
+      minute: '2-digit',
+    })
+    updatedLabel = `資料更新於 ${updatedTime}`
   }
 
   return (
@@ -100,14 +139,14 @@ export default function Home() {
       </header>
 
       <div className="mx-auto max-w-7xl px-5 py-7 lg:px-8 lg:py-10">
-        {searched && (
-          <div className="mb-5 flex items-center justify-between rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
-            <span>
-              目前顯示 <strong>{city}</strong> 的天氣。目前為展示資料，實際天氣待串接後端。
-            </span>
-            <button onClick={() => setSearched(false)} className="font-semibold underline">
-              關閉
-            </button>
+        {loading && (
+          <div className="mb-5 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+            載入中，正在取得最新天氣資料...
+          </div>
+        )}
+        {errorMsg && (
+          <div className="mb-5 rounded-lg border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {errorMsg}
           </div>
         )}
 
@@ -118,7 +157,7 @@ export default function Home() {
               目前位置
             </p>
             <div className="flex items-center gap-2">
-              <h1 className="text-3xl font-bold tracking-tight">{city}</h1>
+              <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{city}</h1>
               <button
                 aria-label="切換城市"
                 className="flex size-7 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
@@ -132,20 +171,20 @@ export default function Home() {
           </div>
           <div className="flex items-center gap-2 text-sm text-slate-600">
             <span className="size-2 rounded-full bg-emerald-500" />
-            資料更新於 5 分鐘前
+            {updatedLabel}
           </div>
         </section>
 
-        <section className="grid gap-5 lg:grid-cols-[1.25fr_0.75fr]">
-          <CurrentWeatherCard weather={currentWeather} />
-          <SunCard />
+        <section className="grid gap-5 lg:grid-cols-[1.25fr_0.75fr] [&>*]:min-w-0">
+          <CurrentWeatherCard weather={currentWeather} todayForecast={todayForecast} />
+          <SunCard weather={currentWeather} />
         </section>
 
-        <HourlyForecast />
+        <HourlyForecast hourly={hourly} />
 
-        <section className="mt-5 grid gap-5 lg:grid-cols-[1.25fr_0.75fr]">
-          <DailyForecast />
-          <WeatherTip />
+        <section className="mt-5 grid gap-5 lg:grid-cols-[1.25fr_0.75fr] [&>*]:min-w-0">
+          <DailyForecast daily={daily} />
+          <WeatherTip weather={currentWeather} todayForecast={todayForecast} />
         </section>
 
         <footer className="mt-10 pb-2 text-center text-xs text-slate-600">
