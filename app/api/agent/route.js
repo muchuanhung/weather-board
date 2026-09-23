@@ -1,6 +1,14 @@
 import { NextResponse } from 'next/server.js'
 
-import { askLlm, formatLlmError } from '../../../lib/agent-llm.js'
+import {
+  createWeatherTool,
+  displayDate,
+  hasComparableEvidence,
+  isoDate,
+  questionCities,
+  runToolAgent,
+  withEvidence,
+} from './tools.js'
 import { resolveCity } from '../../../lib/city-map.js'
 import {
   fetchCurrentObservation,
@@ -13,8 +21,6 @@ import {
   buildHourlyForecast,
 } from '../../../lib/weather-transform.js'
 
-const KIND_TEXT = { sun: '晴', partly: '多雲時晴', cloud: '多雲', rain: '有雨', moon: '晴（夜間）' }
-
 function fmt(value, unit) {
   return value === null || value === undefined ? '—' : `${value}${unit}`
 }
@@ -26,31 +32,15 @@ async function getWeather({ countyName, stationName }) {
     fetchWeeklyForecast(countyName),
   ])
   const daily = buildDailyForecast(weeklyLocation, 7)
+  const hourly = buildHourlyForecast(hourlyLocation)
+  if (!daily.length || !hourly.length) throw new Error('缺少預報資料')
   return {
     current: buildCurrentWeather({ observation, hourlyLocation }),
-    hourly: buildHourlyForecast(hourlyLocation),
+    hourly,
     daily,
-    today: daily[0] ?? null,
+    today: daily.find((d) => d.day === '今天') ?? null,
+    retrievedAt: new Date().toISOString(),
   }
-}
-
-function formatContext(countyName, { current, hourly, daily, today }) {
-  const hours = hourly
-    .map((h) => `${h.time} ${fmt(h.temperature, '°C')} ${KIND_TEXT[h.kind] ?? ''}`)
-    .join('、')
-
-  const dailyLines = daily.map(
-    (d) =>
-      `${d.day}（${d.date}）：最高 ${fmt(d.high, '°C')}、最低 ${fmt(d.low, '°C')}，降雨機率 ${fmt(d.rainChance, '%')}`
-  )
-
-  return [
-    `城市：${countyName}`,
-    `現在：${current.description}，氣溫 ${fmt(current.temperature, '°C')}，體感 ${fmt(current.feelsLike, '°C')}，濕度 ${fmt(current.humidity, '%')}，紫外線指數 ${fmt(current.uvIndex, '')}`,
-    `未來逐時：${hours || '暫無資料'}`,
-    '未來幾天預報：',
-    ...(dailyLines.length ? dailyLines : ['暫無預報資料']),
-  ].join('\n')
 }
 
 const WEEKDAY_NAMES = ['週日', '週一', '週二', '週三', '週四', '週五', '週六']
@@ -261,31 +251,104 @@ export async function POST(request) {
     return NextResponse.json({ ok: false, error: `找不到城市「${city}」` }, { status: 400 })
   }
 
-  let weather
-  try {
-    weather = await getWeather(resolved)
-  } catch (error) {
-    console.error('[Agent API] 天氣資料取得失敗', error)
-    return NextResponse.json({ ok: false, error: '氣象資料取得失敗，請稍後再試' }, { status: 502 })
-  }
-
   const q = question.trim()
-  const context = formatContext(resolved.countyName, weather)
-
+  const now = new Date()
+  const weatherCache = new Map()
+  const loadWeather = (resolvedCity) => {
+    if (!weatherCache.has(resolvedCity.countyName))
+      weatherCache.set(resolvedCity.countyName, getWeather(resolvedCity))
+    return weatherCache.get(resolvedCity.countyName)
+  }
+  const tool = createWeatherTool(loadWeather, now)
   try {
-    const llm = await askLlm({ context, question: q })
-    if (llm) {
+    const llm = await runToolAgent({
+      question: q,
+      city: resolved.countyName,
+      execute: tool.execute,
+      now,
+    })
+    if (
+      llm &&
+      tool.evidence.length &&
+      (!/比較|還是|哪個|哪裡|哪邊/.test(q) ||
+        hasComparableEvidence(tool.evidence, questionCities(q, resolved.countyName)))
+    ) {
       return NextResponse.json({
         ok: true,
-        answer: llm.answer,
+        answer: withEvidence(llm.answer, tool.evidence),
         mode: 'llm',
         provider: llm.provider,
+        evidence: tool.evidence,
       })
     }
-  } catch (error) {
-    console.error(`[Agent API] LLM 呼叫失敗${formatLlmError(error)}，改用規則回答`, error)
+  } catch {
+    console.warn('[Agent API] 模型未完成，改用規則回答')
   }
 
-  const answer = answerByRules(q, resolved.countyName, weather)
-  return NextResponse.json({ ok: true, answer, mode: 'rules' })
+  // 模型失敗後重新建立證據，避免把未用於規則回答的查詢混進答案。
+  const fallback = createWeatherTool(loadWeather, now)
+  const cities = questionCities(q, resolved.countyName)
+  if (cities.length > 3) {
+    return NextResponse.json({
+      ok: true,
+      answer: '一次最多比較三個城市，請拆開詢問。',
+      mode: 'rules',
+      evidence: [],
+    })
+  }
+  const calendar = Array.from({ length: 7 }, (_, offset) => {
+    const [, month, day] = isoDate(now, offset).split('-').map(Number)
+    return { date: `${month}月${day}日`, offset }
+  })
+  const hasDates = /今天|明天|後天|週/.test(q)
+  const selected = hasDates ? findDayByPattern(calendar, q, now) : [calendar[0]]
+  if (selected === null || !selected.length) {
+    return NextResponse.json({
+      ok: true,
+      answer: `${resolved.countyName}目前無法判讀這個日期區間，請把日期拆開問。`,
+      mode: 'rules',
+      evidence: [],
+    })
+  }
+  try {
+    for (const city of cities)
+      await fallback.execute({ city, dayOffsets: selected.map((d) => d.offset) })
+    const summaries = fallback.evidence.map((e) => {
+      const rows = e.daily
+        .map(
+          (d) =>
+            `${displayDate(d.date)}：${fmt(d.low, '°C')}–${fmt(d.high, '°C')}，降雨機率 ${fmt(d.rainChance, '%')}`
+        )
+        .join('；')
+      return `${e.city}：${rows || '暫無預報'}${e.missingDates.length ? `；缺少 ${e.missingDates.map(displayDate).join('、')} 的資料` : ''}`
+    })
+    let answer = summaries.join('。')
+    if (cities.length === 1 && selected.length === 1 && selected[0].offset === 0) {
+      answer = answerByRules(q, cities[0], await loadWeather(resolveCity(cities[0])), now)
+    }
+    if (cities.length > 1) {
+      const complete = fallback.evidence.every(
+        (e) =>
+          !e.missingDates.length &&
+          e.daily.every((d) => d.rainChance !== null && d.rainChance !== undefined)
+      )
+      if (complete) {
+        const scores = fallback.evidence
+          .map((e) => ({ city: e.city, rain: Math.max(...e.daily.map((d) => d.rainChance)) }))
+          .sort((a, b) => a.rain - b.rain)
+        answer +=
+          scores[0].rain < scores[1].rain
+            ? `。若以少淋雨為優先，${scores[0].city}較適合（所選日期最高降雨機率 ${scores[0].rain}%）；溫度請依活動與個人偏好比較。`
+            : '。各城市最低的最高降雨機率相同，無法僅靠降雨機率選出唯一推薦。'
+      } else answer += '。部分日期或降雨機率缺資料，無法可靠推薦哪個城市較適合。'
+    }
+    return NextResponse.json({
+      ok: true,
+      answer: withEvidence(answer, fallback.evidence),
+      mode: 'rules',
+      evidence: fallback.evidence,
+    })
+  } catch {
+    return NextResponse.json({ ok: false, error: '氣象資料取得失敗，請稍後再試' }, { status: 502 })
+  }
 }
