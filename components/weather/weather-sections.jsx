@@ -11,7 +11,6 @@ import {
   Wind,
 } from 'lucide-react'
 
-import { dailyForecast, hourlyForecast } from '@/lib/weather-data'
 import { HeroWeatherIcon, WeatherIcon } from './weather-icons'
 
 export function CurrentWeatherCard({ weather }) {
@@ -49,7 +48,12 @@ export function CurrentWeatherCard({ weather }) {
       <div className="relative mt-3 grid grid-cols-3 divide-x divide-white/20 border-t border-white/20 pt-3 sm:mt-10 sm:pt-5">
         <WeatherMetric icon={<Droplets />} label="濕度" value={`${weather.humidity}%`} />
         <WeatherMetric icon={<Wind />} label="風速" value={`${weather.windSpeed} km/h`} />
-        <WeatherMetric icon={<Gauge />} label="氣壓" value={`${weather.pressure} hPa`} align="end" />
+        <WeatherMetric
+          icon={<Gauge />}
+          label="氣壓"
+          value={`${weather.pressure} hPa`}
+          align="end"
+        />
       </div>
     </article>
   )
@@ -108,7 +112,7 @@ export function SunCard() {
   )
 }
 
-export function HourlyForecast() {
+export function HourlyForecast({ hourly }) {
   return (
     <section className="mt-5 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
       <ForecastHeading
@@ -117,11 +121,12 @@ export function HourlyForecast() {
         action="查看詳細預報 →"
       />
       <div className="flex overflow-x-auto pb-1">
-        {hourlyForecast.map((entry, index) => (
+        {hourly.map((entry, index) => (
           <div
             key={entry.time}
-            className={`flex min-w-[56px] flex-1 flex-col items-center gap-1.5 border-r border-slate-100 px-2 last:border-0 sm:min-w-[82px] sm:gap-3 ${index === 0 ? 'text-[#1769aa]' : ''
-              }`}
+            className={`flex min-w-[56px] flex-1 flex-col items-center gap-1.5 border-r border-slate-100 px-2 last:border-0 sm:min-w-[82px] sm:gap-3 ${
+              index === 0 ? 'text-[#1769aa]' : ''
+            }`}
           >
             <span className="text-[10px] font-medium sm:text-xs">{entry.time}</span>
             <span className="sm:hidden">
@@ -132,7 +137,7 @@ export function HourlyForecast() {
             </span>
             <span className="text-[11px] font-semibold sm:text-lg">{entry.temperature}°</span>
             {index === 0 && (
-              <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-medium">
+              <span className="rounded-full bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium whitespace-nowrap">
                 現在
               </span>
             )}
@@ -143,7 +148,7 @@ export function HourlyForecast() {
   )
 }
 
-export function DailyForecast() {
+export function DailyForecast({ daily }) {
   return (
     <article className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm sm:p-5">
       <div className="mb-4 flex items-center justify-between sm:mb-5">
@@ -154,7 +159,7 @@ export function DailyForecast() {
         <CalendarDays size={20} className="text-slate-400" />
       </div>
       <div className="flex flex-col">
-        {dailyForecast.map((entry) => (
+        {daily.map((entry) => (
           <div
             key={entry.day}
             className="flex items-center gap-2 border-t border-slate-100 py-2.5 first:border-0 sm:gap-3 sm:py-3"

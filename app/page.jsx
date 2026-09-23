@@ -27,6 +27,9 @@ export default function Home() {
     pressure: '1013 hPa',
   })
 
+  const [daily, setDaily] = useState([])
+  const [hourly, setHourly] = useState([])
+
   const today = new Date().toLocaleDateString('zh-TW', {
     year: 'numeric',
     month: 'long',
@@ -59,6 +62,8 @@ export default function Home() {
       .then((res) => res.json())
       .then((data) => {
         setCurrentWeather(data.current)
+        setDaily(data.dailyForecast)
+        setHourly(data.hourlyForecast)
       })
   }, [])
 
@@ -76,6 +81,8 @@ export default function Home() {
           setErrorMsg(data.message)
         } else {
           setCurrentWeather(data.current)
+          setDaily(data.dailyForecast)
+          setHourly(data.hourlyForecast)
         }
         setLoading(false)
       })
@@ -145,15 +152,15 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="grid gap-5 lg:grid-cols-[1.25fr_0.75fr]">
+        <section className="grid gap-5 lg:grid-cols-[1.25fr_0.75fr] [&>*]:min-w-0">
           <CurrentWeatherCard weather={currentWeather} />
           <SunCard />
         </section>
 
-        <HourlyForecast />
+        <HourlyForecast hourly={hourly} />
 
-        <section className="mt-5 grid gap-5 lg:grid-cols-[1.25fr_0.75fr]">
-          <DailyForecast />
+        <section className="mt-5 grid gap-5 lg:grid-cols-[1.25fr_0.75fr] [&>*]:min-w-0">
+          <DailyForecast daily={daily} />
           <WeatherTip />
         </section>
 
