@@ -53,36 +53,150 @@ function formatContext(countyName, { current, hourly, daily, today }) {
   ].join('\n')
 }
 
-function findDayByPattern(daily, pattern) {
-  const dayMap = {
-    週末: (d) => d.day === '週六' || d.day === '週日',
-    週六: (d) => d.day === '週六',
-    週日: (d) => d.day === '週日',
-    明天: (d) => d.day === '明天',
-    後天: (d) => daily.indexOf(d) === 2,
-    週一: (d) => d.day === '週一',
-    週二: (d) => d.day === '週二',
-    週三: (d) => d.day === '週三',
-    週四: (d) => d.day === '週四',
-    週五: (d) => d.day === '週五',
+const WEEKDAY_NAMES = ['週日', '週一', '週二', '週三', '週四', '週五', '週六']
+
+function taipeiMidnightUtc(now) {
+  const [y, m, d] = new Date(now)
+    .toLocaleDateString('en-CA', { timeZone: 'Asia/Taipei' })
+    .split('-')
+    .map(Number)
+  return Date.UTC(y, m - 1, d)
+}
+
+// dailyForecast 的 day 欄位在今天與明天是「今天」「明天」而非星期名（見 API-CONTRACT.md），
+// 所以改由 date（「9月22日」）還原真實日期，算出離今天第幾天。無法解析時回 null。
+function dayOffset(item, todayUtc) {
+  const matched = /^(\d{1,2})月(\d{1,2})日$/.exec(item.date ?? '')
+  if (!matched) return null
+
+  const [, month, day] = matched.map(Number)
+  const baseYear = new Date(todayUtc).getUTCFullYear()
+  // date 沒有年份；預報範圍不超過一週，取離今天最近的年份即可涵蓋跨年
+  const utc = [baseYear - 1, baseYear, baseYear + 1]
+    .map((year) => Date.UTC(year, month - 1, day))
+    .reduce((a, b) => (Math.abs(a - todayUtc) <= Math.abs(b - todayUtc) ? a : b))
+
+  return Math.round((utc - todayUtc) / 86400000)
+}
+
+const DAY_KEYWORDS = [
+  '今天',
+  '明天',
+  '後天',
+  '週末',
+  '週一',
+  '週二',
+  '週三',
+  '週四',
+  '週五',
+  '週六',
+  '週日',
+]
+
+// 預報最多七天，0..6 內每個星期名恰好各出現一次
+const FORECAST_DAYS = 7
+
+// 關鍵字對應到離今天第幾天，與手上有沒有資料無關 ——
+// 這樣「週四到週日」即使缺週四的資料，仍算得出整段範圍。
+function keywordOffsets(keyword, todayUtc) {
+  if (keyword === '今天') return [0]
+  if (keyword === '明天') return [1]
+  if (keyword === '後天') return [2]
+
+  const wanted = keyword === '週末' ? ['週六', '週日'] : [keyword]
+  const offsets = []
+  for (let offset = 0; offset < FORECAST_DAYS; offset++) {
+    const weekday = WEEKDAY_NAMES[new Date(todayUtc + offset * 86400000).getUTCDay()]
+    if (wanted.includes(weekday)) offsets.push(offset)
   }
-  for (const [key, matcher] of Object.entries(dayMap)) {
-    if (pattern.includes(key)) return daily.filter(matcher)
+  return offsets
+}
+
+// 只支援「日期＋連接詞＋日期」，允許空白，不猜其他中文語意。
+const RANGE_CONNECTIVE = /^\s*[到至~～]\s*$/
+
+function isContinuous(offsets) {
+  return offsets.every((offset, i) => i === 0 || offset === offsets[i - 1] + 1)
+}
+
+function targetOffsets(pattern, todayUtc) {
+  const mentions = []
+  for (const keyword of DAY_KEYWORDS) {
+    let at = pattern.indexOf(keyword)
+    while (at !== -1) {
+      mentions.push({ keyword, at, offsets: keywordOffsets(keyword, todayUtc) })
+      at = pattern.indexOf(keyword, at + keyword.length)
+    }
   }
-  return []
+  mentions.sort((a, b) => a.at - b.at)
+
+  const targets = new Set()
+  for (const [index, mention] of mentions.entries()) {
+    mention.offsets.forEach((offset) => targets.add(offset))
+
+    const next = mentions[index + 1]
+    if (!next) continue
+    const between = pattern.slice(mention.at + mention.keyword.length, next.at)
+    if (!RANGE_CONNECTIVE.test(between)) continue
+
+    // 週日開始的七天中，週末是 [0, 6]，不是同一個連續週末。
+    // 這類端點及反向／跨週區間先交由使用者拆開詢問，不默默顛倒起訖。
+    const start = mention.offsets[0]
+    const end = next.offsets.at(-1)
+    if (
+      !isContinuous(mention.offsets) ||
+      !isContinuous(next.offsets) ||
+      start > next.offsets[0] ||
+      mention.offsets.at(-1) > end
+    ) {
+      return null
+    }
+    for (let offset = start; offset <= end; offset++) {
+      targets.add(offset)
+    }
+  }
+
+  return targets
+}
+
+// 先由問題算出要哪幾天，再從 daily 挑出有資料的那幾筆；
+// 範圍中間缺資料的日期直接略過。回傳維持 daily 原本的日期順序。
+// null 表示不支援的區間；[] 表示可以解析，但沒有符合的資料。
+export function findDayByPattern(daily, pattern, now = new Date()) {
+  const todayUtc = taipeiMidnightUtc(now)
+  const targets = targetOffsets(pattern, todayUtc)
+  if (targets === null) return null
+  if (targets.size === 0) return []
+
+  return daily.filter((item) => {
+    const offset = dayOffset(item, todayUtc)
+    if (offset !== null) return targets.has(offset)
+    // date 缺失時只靠標籤辨認今天與明天，其他日期不猜
+    if (item.day === '今天') return targets.has(0)
+    if (item.day === '明天') return targets.has(1)
+    return false
+  })
 }
 
 function formatDayForecast(d) {
   return `${d.day}（${d.date}）最高 ${fmt(d.high, '°C')}、最低 ${fmt(d.low, '°C')}，降雨機率 ${fmt(d.rainChance, '%')}`
 }
 
-function answerByRules(question, countyName, { current, hourly, daily, today }) {
+export function answerByRules(
+  question,
+  countyName,
+  { current, hourly, daily, today },
+  now = new Date()
+) {
   const rain = today?.rainChance ?? null
   const rainyHours = hourly.filter((h) => h.kind === 'rain').map((h) => h.time)
 
   // Multi-day / weekend questions
   if (/週末|週六|週日|明天|後天|週一|週二|週三|週四|週五/.test(question)) {
-    const matched = findDayByPattern(daily, question)
+    const matched = findDayByPattern(daily, question, now)
+    if (matched === null) {
+      return `${countyName}目前無法判讀這個日期區間，跨週或反向範圍暫不支援，請把日期拆開問。`
+    }
     if (matched.length) {
       const forecast = matched.map(formatDayForecast).join('；')
       return `${countyName}${forecast}。`
