@@ -1,6 +1,14 @@
 import { NextResponse } from 'next/server.js'
 
-import { askLlm, formatLlmError } from '../../../lib/agent-llm.js'
+import {
+  createWeatherTool,
+  displayDate,
+  hasComparableEvidence,
+  isoDate,
+  questionCities,
+  runToolAgent,
+  withEvidence,
+} from './tools.js'
 import { resolveCity } from '../../../lib/city-map.js'
 import {
   fetchCurrentObservation,
@@ -13,8 +21,6 @@ import {
   buildHourlyForecast,
 } from '../../../lib/weather-transform.js'
 
-const KIND_TEXT = { sun: '晴', partly: '多雲時晴', cloud: '多雲', rain: '有雨', moon: '晴（夜間）' }
-
 function fmt(value, unit) {
   return value === null || value === undefined ? '—' : `${value}${unit}`
 }
@@ -26,63 +32,161 @@ async function getWeather({ countyName, stationName }) {
     fetchWeeklyForecast(countyName),
   ])
   const daily = buildDailyForecast(weeklyLocation, 7)
+  const hourly = buildHourlyForecast(hourlyLocation)
+  if (!daily.length || !hourly.length) throw new Error('缺少預報資料')
   return {
     current: buildCurrentWeather({ observation, hourlyLocation }),
-    hourly: buildHourlyForecast(hourlyLocation),
+    hourly,
     daily,
-    today: daily[0] ?? null,
+    today: daily.find((d) => d.day === '今天') ?? null,
+    retrievedAt: new Date().toISOString(),
   }
 }
 
-function formatContext(countyName, { current, hourly, daily, today }) {
-  const hours = hourly
-    .map((h) => `${h.time} ${fmt(h.temperature, '°C')} ${KIND_TEXT[h.kind] ?? ''}`)
-    .join('、')
+const WEEKDAY_NAMES = ['週日', '週一', '週二', '週三', '週四', '週五', '週六']
 
-  const dailyLines = daily.map(
-    (d) =>
-      `${d.day}（${d.date}）：最高 ${fmt(d.high, '°C')}、最低 ${fmt(d.low, '°C')}，降雨機率 ${fmt(d.rainChance, '%')}`
-  )
-
-  return [
-    `城市：${countyName}`,
-    `現在：${current.description}，氣溫 ${fmt(current.temperature, '°C')}，體感 ${fmt(current.feelsLike, '°C')}，濕度 ${fmt(current.humidity, '%')}，紫外線指數 ${fmt(current.uvIndex, '')}`,
-    `未來逐時：${hours || '暫無資料'}`,
-    '未來幾天預報：',
-    ...(dailyLines.length ? dailyLines : ['暫無預報資料']),
-  ].join('\n')
+function taipeiMidnightUtc(now) {
+  const [y, m, d] = new Date(now)
+    .toLocaleDateString('en-CA', { timeZone: 'Asia/Taipei' })
+    .split('-')
+    .map(Number)
+  return Date.UTC(y, m - 1, d)
 }
 
-function findDayByPattern(daily, pattern) {
-  const dayMap = {
-    週末: (d) => d.day === '週六' || d.day === '週日',
-    週六: (d) => d.day === '週六',
-    週日: (d) => d.day === '週日',
-    明天: (d) => d.day === '明天',
-    後天: (d) => daily.indexOf(d) === 2,
-    週一: (d) => d.day === '週一',
-    週二: (d) => d.day === '週二',
-    週三: (d) => d.day === '週三',
-    週四: (d) => d.day === '週四',
-    週五: (d) => d.day === '週五',
+// dailyForecast 的 day 欄位在今天與明天是「今天」「明天」而非星期名（見 API-CONTRACT.md），
+// 所以改由 date（「9月22日」）還原真實日期，算出離今天第幾天。無法解析時回 null。
+function dayOffset(item, todayUtc) {
+  const matched = /^(\d{1,2})月(\d{1,2})日$/.exec(item.date ?? '')
+  if (!matched) return null
+
+  const [, month, day] = matched.map(Number)
+  const baseYear = new Date(todayUtc).getUTCFullYear()
+  // date 沒有年份；預報範圍不超過一週，取離今天最近的年份即可涵蓋跨年
+  const utc = [baseYear - 1, baseYear, baseYear + 1]
+    .map((year) => Date.UTC(year, month - 1, day))
+    .reduce((a, b) => (Math.abs(a - todayUtc) <= Math.abs(b - todayUtc) ? a : b))
+
+  return Math.round((utc - todayUtc) / 86400000)
+}
+
+const DAY_KEYWORDS = [
+  '今天',
+  '明天',
+  '後天',
+  '週末',
+  '週一',
+  '週二',
+  '週三',
+  '週四',
+  '週五',
+  '週六',
+  '週日',
+]
+
+// 預報最多七天，0..6 內每個星期名恰好各出現一次
+const FORECAST_DAYS = 7
+
+// 關鍵字對應到離今天第幾天，與手上有沒有資料無關 ——
+// 這樣「週四到週日」即使缺週四的資料，仍算得出整段範圍。
+function keywordOffsets(keyword, todayUtc) {
+  if (keyword === '今天') return [0]
+  if (keyword === '明天') return [1]
+  if (keyword === '後天') return [2]
+
+  const wanted = keyword === '週末' ? ['週六', '週日'] : [keyword]
+  const offsets = []
+  for (let offset = 0; offset < FORECAST_DAYS; offset++) {
+    const weekday = WEEKDAY_NAMES[new Date(todayUtc + offset * 86400000).getUTCDay()]
+    if (wanted.includes(weekday)) offsets.push(offset)
   }
-  for (const [key, matcher] of Object.entries(dayMap)) {
-    if (pattern.includes(key)) return daily.filter(matcher)
+  return offsets
+}
+
+// 只支援「日期＋連接詞＋日期」，允許空白，不猜其他中文語意。
+const RANGE_CONNECTIVE = /^\s*[到至~～]\s*$/
+
+function isContinuous(offsets) {
+  return offsets.every((offset, i) => i === 0 || offset === offsets[i - 1] + 1)
+}
+
+function targetOffsets(pattern, todayUtc) {
+  const mentions = []
+  for (const keyword of DAY_KEYWORDS) {
+    let at = pattern.indexOf(keyword)
+    while (at !== -1) {
+      mentions.push({ keyword, at, offsets: keywordOffsets(keyword, todayUtc) })
+      at = pattern.indexOf(keyword, at + keyword.length)
+    }
   }
-  return []
+  mentions.sort((a, b) => a.at - b.at)
+
+  const targets = new Set()
+  for (const [index, mention] of mentions.entries()) {
+    mention.offsets.forEach((offset) => targets.add(offset))
+
+    const next = mentions[index + 1]
+    if (!next) continue
+    const between = pattern.slice(mention.at + mention.keyword.length, next.at)
+    if (!RANGE_CONNECTIVE.test(between)) continue
+
+    // 週日開始的七天中，週末是 [0, 6]，不是同一個連續週末。
+    // 這類端點及反向／跨週區間先交由使用者拆開詢問，不默默顛倒起訖。
+    const start = mention.offsets[0]
+    const end = next.offsets.at(-1)
+    if (
+      !isContinuous(mention.offsets) ||
+      !isContinuous(next.offsets) ||
+      start > next.offsets[0] ||
+      mention.offsets.at(-1) > end
+    ) {
+      return null
+    }
+    for (let offset = start; offset <= end; offset++) {
+      targets.add(offset)
+    }
+  }
+
+  return targets
+}
+
+// 先由問題算出要哪幾天，再從 daily 挑出有資料的那幾筆；
+// 範圍中間缺資料的日期直接略過。回傳維持 daily 原本的日期順序。
+// null 表示不支援的區間；[] 表示可以解析，但沒有符合的資料。
+export function findDayByPattern(daily, pattern, now = new Date()) {
+  const todayUtc = taipeiMidnightUtc(now)
+  const targets = targetOffsets(pattern, todayUtc)
+  if (targets === null) return null
+  if (targets.size === 0) return []
+
+  return daily.filter((item) => {
+    const offset = dayOffset(item, todayUtc)
+    if (offset !== null) return targets.has(offset)
+    // date 缺失時只靠標籤辨認今天與明天，其他日期不猜
+    if (item.day === '今天') return targets.has(0)
+    if (item.day === '明天') return targets.has(1)
+    return false
+  })
 }
 
 function formatDayForecast(d) {
   return `${d.day}（${d.date}）最高 ${fmt(d.high, '°C')}、最低 ${fmt(d.low, '°C')}，降雨機率 ${fmt(d.rainChance, '%')}`
 }
 
-function answerByRules(question, countyName, { current, hourly, daily, today }) {
+export function answerByRules(
+  question,
+  countyName,
+  { current, hourly, daily, today },
+  now = new Date()
+) {
   const rain = today?.rainChance ?? null
   const rainyHours = hourly.filter((h) => h.kind === 'rain').map((h) => h.time)
 
   // Multi-day / weekend questions
   if (/週末|週六|週日|明天|後天|週一|週二|週三|週四|週五/.test(question)) {
-    const matched = findDayByPattern(daily, question)
+    const matched = findDayByPattern(daily, question, now)
+    if (matched === null) {
+      return `${countyName}目前無法判讀這個日期區間，跨週或反向範圍暫不支援，請把日期拆開問。`
+    }
     if (matched.length) {
       const forecast = matched.map(formatDayForecast).join('；')
       return `${countyName}${forecast}。`
@@ -147,31 +251,104 @@ export async function POST(request) {
     return NextResponse.json({ ok: false, error: `找不到城市「${city}」` }, { status: 400 })
   }
 
-  let weather
-  try {
-    weather = await getWeather(resolved)
-  } catch (error) {
-    console.error('[Agent API] 天氣資料取得失敗', error)
-    return NextResponse.json({ ok: false, error: '氣象資料取得失敗，請稍後再試' }, { status: 502 })
-  }
-
   const q = question.trim()
-  const context = formatContext(resolved.countyName, weather)
-
+  const now = new Date()
+  const weatherCache = new Map()
+  const loadWeather = (resolvedCity) => {
+    if (!weatherCache.has(resolvedCity.countyName))
+      weatherCache.set(resolvedCity.countyName, getWeather(resolvedCity))
+    return weatherCache.get(resolvedCity.countyName)
+  }
+  const tool = createWeatherTool(loadWeather, now)
   try {
-    const llm = await askLlm({ context, question: q })
-    if (llm) {
+    const llm = await runToolAgent({
+      question: q,
+      city: resolved.countyName,
+      execute: tool.execute,
+      now,
+    })
+    if (
+      llm &&
+      tool.evidence.length &&
+      (!/比較|還是|哪個|哪裡|哪邊/.test(q) ||
+        hasComparableEvidence(tool.evidence, questionCities(q, resolved.countyName)))
+    ) {
       return NextResponse.json({
         ok: true,
-        answer: llm.answer,
+        answer: withEvidence(llm.answer, tool.evidence),
         mode: 'llm',
         provider: llm.provider,
+        evidence: tool.evidence,
       })
     }
-  } catch (error) {
-    console.error(`[Agent API] LLM 呼叫失敗${formatLlmError(error)}，改用規則回答`, error)
+  } catch {
+    console.warn('[Agent API] 模型未完成，改用規則回答')
   }
 
-  const answer = answerByRules(q, resolved.countyName, weather)
-  return NextResponse.json({ ok: true, answer, mode: 'rules' })
+  // 模型失敗後重新建立證據，避免把未用於規則回答的查詢混進答案。
+  const fallback = createWeatherTool(loadWeather, now)
+  const cities = questionCities(q, resolved.countyName)
+  if (cities.length > 3) {
+    return NextResponse.json({
+      ok: true,
+      answer: '一次最多比較三個城市，請拆開詢問。',
+      mode: 'rules',
+      evidence: [],
+    })
+  }
+  const calendar = Array.from({ length: 7 }, (_, offset) => {
+    const [, month, day] = isoDate(now, offset).split('-').map(Number)
+    return { date: `${month}月${day}日`, offset }
+  })
+  const hasDates = /今天|明天|後天|週/.test(q)
+  const selected = hasDates ? findDayByPattern(calendar, q, now) : [calendar[0]]
+  if (selected === null || !selected.length) {
+    return NextResponse.json({
+      ok: true,
+      answer: `${resolved.countyName}目前無法判讀這個日期區間，請把日期拆開問。`,
+      mode: 'rules',
+      evidence: [],
+    })
+  }
+  try {
+    for (const city of cities)
+      await fallback.execute({ city, dayOffsets: selected.map((d) => d.offset) })
+    const summaries = fallback.evidence.map((e) => {
+      const rows = e.daily
+        .map(
+          (d) =>
+            `${displayDate(d.date)}：${fmt(d.low, '°C')}–${fmt(d.high, '°C')}，降雨機率 ${fmt(d.rainChance, '%')}`
+        )
+        .join('；')
+      return `${e.city}：${rows || '暫無預報'}${e.missingDates.length ? `；缺少 ${e.missingDates.map(displayDate).join('、')} 的資料` : ''}`
+    })
+    let answer = summaries.join('。')
+    if (cities.length === 1 && selected.length === 1 && selected[0].offset === 0) {
+      answer = answerByRules(q, cities[0], await loadWeather(resolveCity(cities[0])), now)
+    }
+    if (cities.length > 1) {
+      const complete = fallback.evidence.every(
+        (e) =>
+          !e.missingDates.length &&
+          e.daily.every((d) => d.rainChance !== null && d.rainChance !== undefined)
+      )
+      if (complete) {
+        const scores = fallback.evidence
+          .map((e) => ({ city: e.city, rain: Math.max(...e.daily.map((d) => d.rainChance)) }))
+          .sort((a, b) => a.rain - b.rain)
+        answer +=
+          scores[0].rain < scores[1].rain
+            ? `。若以少淋雨為優先，${scores[0].city}較適合（所選日期最高降雨機率 ${scores[0].rain}%）；溫度請依活動與個人偏好比較。`
+            : '。各城市最低的最高降雨機率相同，無法僅靠降雨機率選出唯一推薦。'
+      } else answer += '。部分日期或降雨機率缺資料，無法可靠推薦哪個城市較適合。'
+    }
+    return NextResponse.json({
+      ok: true,
+      answer: withEvidence(answer, fallback.evidence),
+      mode: 'rules',
+      evidence: fallback.evidence,
+    })
+  } catch {
+    return NextResponse.json({ ok: false, error: '氣象資料取得失敗，請稍後再試' }, { status: 502 })
+  }
 }
