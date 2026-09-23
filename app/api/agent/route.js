@@ -13,7 +13,6 @@ import {
   buildHourlyForecast,
 } from '../../../lib/weather-transform.js'
 
-
 const KIND_TEXT = { sun: '晴', partly: '多雲時晴', cloud: '多雲', rain: '有雨', moon: '晴（夜間）' }
 
 function fmt(value, unit) {

@@ -45,8 +45,6 @@ Discord 推播另走 Open-Meteo（`lib/weather-source.js`），不經這支 rout
 - Props：`{ city: string }`，與首頁天氣區塊共用同一個 `city` state。
 - 快捷問題：今天要帶傘嗎？／晚上會冷嗎？／適合戶外運動嗎？／未來幾小時會下雨嗎？
 
-
-
 ## Discord 推播
 
 降雨機率偏高時，透過 Webhook 把天氣摘要推到 Discord；Vercel Cron 每天台北時間 08:00／17:00 各跑一次（預設台北）。

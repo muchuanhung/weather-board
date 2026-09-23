@@ -87,7 +87,7 @@ export function WeatherAgentPanel({ city = 'Taipei', onAsk }) {
       <button
         onClick={() => setIsOpen(!isOpen)}
         aria-label={isOpen ? '關閉天氣小幫手' : '打開天氣小幫手'}
-        className={`fixed bottom-6 right-6 z-40 flex size-14 items-center justify-center rounded-full shadow-lg transition-all duration-200 ${
+        className={`fixed right-6 bottom-6 z-40 flex size-14 items-center justify-center rounded-full shadow-lg transition-all duration-200 ${
           isOpen
             ? 'bg-[#1769aa] text-white hover:bg-[#1560a0]'
             : 'bg-white text-[#1769aa] hover:shadow-xl'
@@ -98,7 +98,7 @@ export function WeatherAgentPanel({ city = 'Taipei', onAsk }) {
 
       {/* Panel Card */}
       {isOpen && (
-        <div className="fixed bottom-24 right-6 z-50 w-full max-w-sm animate-in fade-in slide-in-from-bottom-4 duration-200 pb-safe">
+        <div className="animate-in fade-in slide-in-from-bottom-4 pb-safe fixed right-6 bottom-24 z-50 w-full max-w-sm duration-200">
           <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xl">
             {/* Header */}
             <div className="border-b border-slate-100 bg-gradient-to-r from-[#1769aa] to-[#1560a0] px-5 py-4 text-white">
@@ -167,7 +167,7 @@ export function WeatherAgentPanel({ city = 'Taipei', onAsk }) {
                     placeholder="問我今天天氣相關問題…"
                     disabled={loading}
                     rows={1}
-                    className="flex-1 resize-none rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm placeholder-slate-400 outline-none transition disabled:bg-slate-100 disabled:text-slate-500 focus:border-[#1769aa] focus:ring-2 focus:ring-blue-100"
+                    className="flex-1 resize-none rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm placeholder-slate-400 transition outline-none focus:border-[#1769aa] focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100 disabled:text-slate-500"
                     style={{ maxHeight: '100px', minHeight: '40px' }}
                   />
                   <button
@@ -179,9 +179,7 @@ export function WeatherAgentPanel({ city = 'Taipei', onAsk }) {
                     <Send size={18} />
                   </button>
                 </div>
-                <p className="text-right text-[10px] text-slate-500">
-                  {question.length}/80
-                </p>
+                <p className="text-right text-[10px] text-slate-500">{question.length}/80</p>
               </div>
             </div>
           </div>
