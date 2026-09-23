@@ -32,8 +32,8 @@ API 串接規格見 [API-CONTRACT.md](./API-CONTRACT.md)。目前後端實作與
 - [x] 完成「現在天氣」欄位：溫度、體感、天氣描述／kind、更新時間
 - [x] 完成「簡單預報」：已提供逐時與逐日兩組預報
 - [x] 支援 `?city=`（英文拼音、中文簡稱／全名、「台／臺」皆可；找不到回 400 error JSON）
-- [ ] 自測：`curl`／瀏覽器打通；在 PR 註解貼一筆成功／失敗 response 範例
-- [ ] （選做，有剩）Discord Webhook：天氣摘要推一則
+- [x] 自測：`curl`／瀏覽器打通；在 PR 註解貼一筆成功／失敗 response 範例
+- [x] （選做，有剩）Discord Webhook：天氣摘要推一則（由統籌實作於 `app/api/discord/notify`）
 
 ## 本地 review 修復與驗證（9/22）
 
