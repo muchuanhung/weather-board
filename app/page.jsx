@@ -10,6 +10,7 @@ import {
   SunCard,
   WeatherTip,
 } from '@/components/weather/weather-sections'
+import { WeatherAgentPanel } from '@/components/weather/weather-agent-panel'
 
 export default function Home() {
   const [city, setCity] = useState('Taipei')
@@ -26,30 +27,31 @@ export default function Home() {
     pressure: '1013 hPa',
   })
 
-  const today = new Date().toLocaleDateString('zh-TW', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    weekday: 'long',
-  })
-
-  const [now, setNow] = useState(
-    new Date().toLocaleTimeString('zh-TW', {
-      hour: 'numeric',
-      minute: '2-digit',
-    })
-  )
+  const [today, setToday] = useState('')
+  const [now, setNow] = useState('')
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setNow(
-        new Date().toLocaleTimeString('zh-TW', {
-          hour: 'numeric',
-          minute: '2-digit',
+    function tick() {
+      const d = new Date()
+      setToday(
+        d.toLocaleDateString('zh-TW', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          weekday: 'long',
+          timeZone: 'Asia/Taipei',
         })
       )
-    }, 1000)
-
+      setNow(
+        d.toLocaleTimeString('zh-TW', {
+          hour: 'numeric',
+          minute: '2-digit',
+          timeZone: 'Asia/Taipei',
+        })
+      )
+    }
+    tick()
+    const timer = setInterval(tick, 1000)
     return () => clearInterval(timer)
   }, [])
 
@@ -124,8 +126,8 @@ export default function Home() {
                 <ChevronDown size={16} />
               </button>
             </div>
-            <p className="mt-1 text-sm text-slate-600">
-              {today} · {now}
+            <p className="mt-1 text-sm text-slate-600" suppressHydrationWarning>
+              {today && now ? `${today} · ${now}` : '\u00A0'}
             </p>
           </div>
           <div className="flex items-center gap-2 text-sm text-slate-600">
@@ -150,6 +152,8 @@ export default function Home() {
           weather-board · 為Wehelp團隊打造的天氣資訊工具
         </footer>
       </div>
+
+      <WeatherAgentPanel city={city} />
     </main>
   )
 }
