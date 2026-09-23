@@ -13,7 +13,7 @@ import {
 
 import { HeroWeatherIcon, WeatherIcon } from './weather-icons'
 
-export function CurrentWeatherCard({ weather }) {
+export function CurrentWeatherCard({ weather, todayForecast }) {
   return (
     <article className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1769aa] to-[#1c76ac] p-4 text-white shadow-lg shadow-blue-100 sm:p-8">
       <div className="absolute -top-20 -right-10 size-64 rounded-full bg-white/5" />
@@ -39,8 +39,9 @@ export function CurrentWeatherCard({ weather }) {
           <p className="text-sm text-blue-100">體感</p>
           <p className="mt-1 text-lg font-semibold sm:text-2xl">{weather.feelsLike}°</p>
           <p className="mt-2 text-sm text-blue-100 sm:mt-5">
-            今日最高 <strong className="text-white">--°</strong> · 最低{' '}
-            <strong className="text-white">--°</strong>
+            今日最高{' '}
+            <strong className="text-white">{todayForecast ? todayForecast.high : '--'}°</strong> ·
+            最低 <strong className="text-white">{todayForecast ? todayForecast.low : '--'}°</strong>
           </p>
         </div>
       </div>
@@ -73,7 +74,7 @@ function WeatherMetric({ icon, label, value, align = 'center' }) {
   )
 }
 
-export function SunCard() {
+export function SunCard({ weather }) {
   return (
     <aside className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm sm:p-6">
       <div className="flex items-start justify-between">
@@ -93,14 +94,14 @@ export function SunCard() {
             <Sunrise size={12} className="text-amber-500 sm:size-[15px]" />
             日出
           </p>
-          <p className="mt-1 text-lg font-semibold sm:text-2xl">05:43</p>
+          <p className="mt-1 text-lg font-semibold sm:text-2xl">{weather.sunrise}</p>
         </div>
         <div className="mx-5 mb-3 h-px flex-1 border-t border-dashed border-slate-200" />
         <div className="text-right">
           <p className="flex items-center justify-end gap-1.5 text-xs text-slate-500 sm:gap-2">
             日落 <Sunset size={12} className="text-orange-400 sm:size-[15px]" />
           </p>
-          <p className="mt-1 text-lg font-semibold sm:text-2xl">17:55</p>
+          <p className="mt-1 text-lg font-semibold sm:text-2xl">{weather.sunset}</p>
         </div>
       </div>
 

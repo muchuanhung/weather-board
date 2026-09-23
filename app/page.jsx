@@ -20,11 +20,11 @@ export default function Home() {
   const [currentWeather, setCurrentWeather] = useState({
     temperature: 28,
     feelsLike: 30,
-    tempHigh: 30,
-    tempLow: 25,
     humidity: '72%',
-    wind: '12 km/h',
-    pressure: '1013 hPa',
+    windSpeed: '12',
+    pressure: '1013',
+    sunrise: '--:--',
+    sunset: '--:--',
   })
 
   const [daily, setDaily] = useState([])
@@ -88,6 +88,8 @@ export default function Home() {
       })
     setQuery('')
   }
+
+  const todayForecast = daily.find((entry) => entry.day === '今天')
 
   return (
     <main className="min-h-screen bg-[#f3f7fb] text-slate-900">
@@ -153,8 +155,8 @@ export default function Home() {
         </section>
 
         <section className="grid gap-5 lg:grid-cols-[1.25fr_0.75fr] [&>*]:min-w-0">
-          <CurrentWeatherCard weather={currentWeather} />
-          <SunCard />
+          <CurrentWeatherCard weather={currentWeather} todayForecast={todayForecast} />
+          <SunCard weather={currentWeather} />
         </section>
 
         <HourlyForecast hourly={hourly} />
