@@ -53,20 +53,24 @@ export default function Home() {
     return () => clearInterval(timer)
   }, [])
 
+  useEffect(() => {
+    fetch('/api/weather?city=Taipei')
+      .then((res) => res.json())
+      .then((data) => {
+        setCurrentWeather(data.current)
+      })
+  }, [])
+
   function submitSearch(event) {
     event.preventDefault()
     const trimmed = query.trim()
     if (!trimmed) return
     setCity(trimmed)
-    setCurrentWeather({
-      temperature: 18,
-      feelsLike: 16,
-      tempHigh: 20,
-      tempLow: 14,
-      humidity: '90%',
-      wind: '25 km/h',
-      pressure: '1005 hPa',
-    })
+    fetch(`/api/weather?city=${trimmed}`)
+      .then((res) => res.json())
+      .then((data) => {
+        setCurrentWeather(data.current)
+      })
     setSearched(true)
     setQuery('')
   }

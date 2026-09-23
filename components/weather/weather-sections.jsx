@@ -38,16 +38,16 @@ export function CurrentWeatherCard({ weather }) {
           <p className="text-sm text-blue-100">體感</p>
           <p className="mt-1 text-2xl font-semibold">{weather.feelsLike}°</p>
           <p className="mt-5 text-sm text-blue-100">
-            今日最高 <strong className="text-white">{weather.tempHigh}°</strong> · 最低{' '}
-            <strong className="text-white">{weather.tempLow}°</strong>
+            今日最高 <strong className="text-white">--°</strong> · 最低{' '}
+            <strong className="text-white">--°</strong>
           </p>
         </div>
       </div>
 
       <div className="relative mt-10 grid grid-cols-3 divide-x divide-white/20 border-t border-white/20 pt-5">
-        <WeatherMetric icon={<Droplets />} label="濕度" value={weather.humidity} />
-        <WeatherMetric icon={<Wind />} label="風速" value={weather.wind} />
-        <WeatherMetric icon={<Gauge />} label="氣壓" value={weather.pressure} align="end" />
+        <WeatherMetric icon={<Droplets />} label="濕度" value={`${weather.humidity}%`} />
+        <WeatherMetric icon={<Wind />} label="風速" value={`${weather.windSpeed} km/h`} />
+        <WeatherMetric icon={<Gauge />} label="氣壓" value={`${weather.pressure} hPa`} align="end" />
       </div>
     </article>
   )
@@ -117,9 +117,8 @@ export function HourlyForecast() {
         {hourlyForecast.map((entry, index) => (
           <div
             key={entry.time}
-            className={`flex min-w-[82px] flex-1 flex-col items-center gap-3 border-r border-slate-100 px-2 last:border-0 ${
-              index === 0 ? 'text-[#1769aa]' : ''
-            }`}
+            className={`flex min-w-[82px] flex-1 flex-col items-center gap-3 border-r border-slate-100 px-2 last:border-0 ${index === 0 ? 'text-[#1769aa]' : ''
+              }`}
           >
             <span className="text-xs font-medium">{entry.time}</span>
             <WeatherIcon kind={entry.kind} size={30} />
