@@ -9,44 +9,16 @@ Wehelp 三人小組的氣象看板。
 | 線上 | https://weather-board-liart.vercel.app/ |
 | 本機 | http://localhost:3000                   |
 
-## 本週必做
-
-- 氣象頁：至少現在天氣＋簡單預報（逐時或逐日其一即可，兩個都有更好）
-- 本 README：分工表＋上面的網站連結
-- 報告影片初稿：分工、demo、心得（見下方）
-
-### 有剩再加（不當必做）
-
-- Discord Webhook 推播
-- AI Agent
-
 ## 分工
 
 三人。前端、後端各認領一塊，檔案盡量不重疊；統籌不搶寫業務碼，負責把範圍與交付釘死。
 
 | 角色 | 負責人 | 切塊                | 本週交出                                                                             |
 | ---- | ------ | ------------------- | ------------------------------------------------------------------------------------ |
-| 統籌 | 洪睦筌 | C. 規格／排程／交付 | 開規格書、確認排程、跑 CI、部署、README 連結、截圖、影片初稿、整合 demo              |
+| 後端 | 莊宗霖 | A. 資料與 API       | 氣象資料取得，整理成前端好用的格式。                               |
 | 前端 | 鍾旻瑞 | B. 介面與互動       | 頁面結構、列表／詳情、接上資料、基本操作（搜尋、切換城市）；版面／色票／RWD 一併收斂 |
-| 後端 | 莊宗霖 | A. 資料與 API       | 氣象資料取得，整理成前端好用的格式。選做：Discord 推播                               |
+| 統籌 | 洪睦筌 | C. 規格／排程／交付 | 開規格書、確認排程、跑 CI、Discord 推播、部署、README 連結、截圖、簡報、整合 demo |
 
-### 檔案認領
-
-**A. 後端** — `lib/weather-data.js`（資料形狀）、`app/api/weather/`（待建，取得並整理）。選做 webhook 也放這裡，不要改頁面元件。
-
-**B. 前端** — `app/page.jsx`、`components/weather/weather-sections.jsx`、`components/weather/weather-icons.jsx`、`app/globals.css`。只消費 A 輸出的格式，不自己打外部氣象 API。
-
-**C. 統籌** — 規格書（API 契約、必做範圍、驗收條件）、排程與合併節奏、CI／部署設定、本 README、截圖與投影片。不進 A／B 業務檔，除非卡關要救火。
-
-現況：`lib/weather-data.js` 是靜態展示資料（純 JavaScript，無型別；資料形狀見檔內註解）。搜尋城市只改標題，溫度仍是台北。本週後端換成真資料，前端接上。
-
-## 排程
-
-| 時段                | 目標                                                        |
-| ------------------- | ----------------------------------------------------------- |
-| 9/22–9/23（二～三） | Host 建 Repo／基礎專案；其他人 Fork，各自開發（檔案不重疊） |
-| 9/24（四）中午前    | 串起來、修衝突；README 補齊分工＋成果連結                   |
-| 9/24（四）23:59 前  | 組長把 Host Repo 連結私訊彭彭；投影片初稿完成               |
 
 ### 待辦清單
 
@@ -54,14 +26,6 @@ Wehelp 三人小組的氣象看板。
 - 後端：[TODO-backend.md](./TODO-backend.md)（莊宗霖）
 - 前端：[TODO-frontend.md](./TODO-frontend.md)（鍾旻瑞）
 
-## 投影片
-
-大致涵蓋就夠交：
-
-1. 成員與分工
-2. Demo：現在天氣＋預報，附網站連結
-3. 怎麼接起來：後端格式 → 前端頁面
-4. 心得：各人 2–3 句。Webhook／Agent
 
 ## 本機
 
@@ -71,3 +35,18 @@ pnpm dev
 ```
 
 開 http://localhost:3000 。
+
+## 天氣 API
+
+`GET /api/weather?city=Taipei`，資料源是 [Open-Meteo](https://open-meteo.com/)（免申請 API key）。
+
+回傳形狀對齊 [`test/weather-contract.mjs`](./test/weather-contract.mjs)：`current` / `hourly` / `daily`。
+城市支援二十個縣市，`台北`、`臺北市`、`Taipei` 都吃得下；查不到回 400 並列出支援清單。
+
+## Discord 推播
+
+降雨機率偏高時，透過 Webhook 把天氣摘要推到 Discord；Vercel Cron 每天台北時間 08:00／17:00 各跑一次（預設台北）。
+
+線上要在 Vercel 設定 `DISCORD_WEBHOOK_URL`、`CRON_SECRET`（其餘選填見 [`.env.example`](./.env.example)）。Webhook URL 與 secret **不要**寫進 git、截圖或投影片。
+
+本機把同樣變數放進 `.env.local` 即可；細節與測試方式見程式註解／`TODO-lead.md`。
