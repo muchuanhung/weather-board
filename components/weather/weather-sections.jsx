@@ -11,7 +11,44 @@ import {
   Wind,
 } from 'lucide-react'
 
-import { HeroWeatherIcon, WeatherIcon } from './weather-icons'
+import { WeatherIcon } from './weather-icons'
+
+function uvLevelText(uv) {
+  if (uv >= 11) return '極高'
+  if (uv >= 8) return '很高'
+  if (uv >= 6) return '高'
+  if (uv >= 3) return '中等'
+  return '低'
+}
+
+function buildTip({ weather, todayForecast }) {
+  const rain = todayForecast ? todayForecast.rainChance : null
+  const uv = weather.uvIndex
+  const temp = weather.temperature
+
+  if (rain != null && rain >= 60) {
+    return '今天很可能下雨，出門記得帶把傘。'
+  }
+  if (rain != null && rain >= 30) {
+    return '天氣不太穩定，建議帶把傘備用。'
+  }
+  if (uv != null && uv >= 8) {
+    return '紫外線非常強，務必做好防曬、戴帽子或撐傘，避免長時間曝曬。'
+  }
+  if (uv != null && uv >= 6) {
+    return '紫外線偏強，外出請記得防曬。'
+  }
+  if (uv != null && uv >= 3) {
+    return '紫外線中等，建議還是擦個防曬再出門。'
+  }
+  if (temp != null && temp >= 32) {
+    return '天氣炎熱，注意防曬並多補充水分。'
+  }
+  if (temp != null && temp <= 16) {
+    return '天氣偏涼，出門記得添件外套。'
+  }
+  return '天氣還算舒適，適合外出走走。'
+}
 
 export function CurrentWeatherCard({ weather, todayForecast }) {
   return (
@@ -21,9 +58,11 @@ export function CurrentWeatherCard({ weather, todayForecast }) {
 
       <div className="relative flex flex-col justify-between gap-2 sm:flex-row sm:items-start sm:gap-12">
         <div>
-          <p className="text-sm font-medium text-blue-100">現在天氣 · 12:35 PM</p>
+          <p className="text-sm font-medium text-blue-100">現在天氣</p>
           <div className="mt-2 flex items-center gap-3 sm:mt-4 sm:gap-4">
-            <HeroWeatherIcon />
+            <div className="[&>svg]:size-12 sm:[&>svg]:size-[72px]">
+              <WeatherIcon kind={weather.kind} />
+            </div>
             <div>
               <div className="flex items-start">
                 <span className="text-2xl font-light tracking-tighter sm:text-7xl">
@@ -31,7 +70,7 @@ export function CurrentWeatherCard({ weather, todayForecast }) {
                 </span>
                 <span className="text-lg font-light sm:mt-2 sm:text-3xl">°</span>
               </div>
-              <p className="text-base font-medium sm:text-lg">晴時多雲</p>
+              <p className="text-base font-medium sm:text-lg">{weather.description}</p>
             </div>
           </div>
         </div>
@@ -107,7 +146,10 @@ export function SunCard({ weather }) {
 
       <div className="mt-3 flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-1.5 text-[11px] text-slate-600 sm:mt-7 sm:py-2.5 sm:text-xs">
         <Activity size={13} className="text-[#1769aa] sm:size-[15px]" />
-        紫外線指數 <strong className="ml-auto text-slate-900">中等 (5)</strong>
+        紫外線指數{' '}
+        <strong className="ml-auto text-slate-900">
+          {uvLevelText(weather.uvIndex)} ({weather.uvIndex})
+        </strong>
       </div>
     </aside>
   )
@@ -193,7 +235,8 @@ function RainChance({ chance }) {
   return <span className="text-slate-600">降雨 {chance}%</span>
 }
 
-export function WeatherTip() {
+export function WeatherTip({ weather, todayForecast }) {
+  const tip = buildTip({ weather, todayForecast })
   return (
     <aside className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm sm:p-5">
       <div className="mb-4 flex items-center gap-2 sm:mb-5">
@@ -205,12 +248,10 @@ export function WeatherTip() {
           <p className="text-xs text-slate-500">出門前看一下</p>
         </div>
       </div>
-      <p className="text-xs leading-6 text-slate-600 sm:text-sm">
-        午後體感溫度較高，建議穿著輕便透氣的衣物。紫外線指數中等，外出時記得做好防曬。
-      </p>
+      <p className="text-xs leading-6 text-slate-600 sm:text-sm">{tip}</p>
       <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-xs text-slate-500 sm:mt-5 sm:pt-4">
-        <span>風向</span>
-        <span className="font-medium text-slate-800">東南風 · 3 級</span>
+        <span>濕度</span>
+        <span className="font-medium text-slate-800">{weather.humidity}%</span>
       </div>
     </aside>
   )

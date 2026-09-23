@@ -20,11 +20,15 @@ export default function Home() {
   const [currentWeather, setCurrentWeather] = useState({
     temperature: 28,
     feelsLike: 30,
-    humidity: '72%',
+    description: '晴時多雲',
+    kind: 'sun',
+    humidity: '72',
     windSpeed: '12',
     pressure: '1013',
+    uvIndex: 5,
     sunrise: '--:--',
     sunset: '--:--',
+    updatedAt: '',
   })
 
   const [daily, setDaily] = useState([])
@@ -91,6 +95,15 @@ export default function Home() {
 
   const todayForecast = daily.find((entry) => entry.day === '今天')
 
+  let updatedLabel = '資料更新中'
+  if (currentWeather.updatedAt) {
+    const updatedTime = new Date(currentWeather.updatedAt).toLocaleTimeString('zh-TW', {
+      hour: 'numeric',
+      minute: '2-digit',
+    })
+    updatedLabel = `資料更新於 ${updatedTime}`
+  }
+
   return (
     <main className="min-h-screen bg-[#f3f7fb] text-slate-900">
       <header className="border-b border-slate-200/80 bg-white/90 backdrop-blur">
@@ -150,7 +163,7 @@ export default function Home() {
           </div>
           <div className="flex items-center gap-2 text-sm text-slate-600">
             <span className="size-2 rounded-full bg-emerald-500" />
-            資料更新於 5 分鐘前
+            {updatedLabel}
           </div>
         </section>
 
@@ -163,7 +176,7 @@ export default function Home() {
 
         <section className="mt-5 grid gap-5 lg:grid-cols-[1.25fr_0.75fr] [&>*]:min-w-0">
           <DailyForecast daily={daily} />
-          <WeatherTip />
+          <WeatherTip weather={currentWeather} todayForecast={todayForecast} />
         </section>
 
         <footer className="mt-10 pb-2 text-center text-xs text-slate-600">
