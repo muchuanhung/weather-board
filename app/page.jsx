@@ -14,7 +14,8 @@ import {
 export default function Home() {
   const [city, setCity] = useState('Taipei')
   const [query, setQuery] = useState('')
-  const [searched, setSearched] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [errorMsg, setErrorMsg] = useState('')
 
   const [currentWeather, setCurrentWeather] = useState({
     temperature: 28,
@@ -66,12 +67,18 @@ export default function Home() {
     const trimmed = query.trim()
     if (!trimmed) return
     setCity(trimmed)
+    setLoading(true)
+    setErrorMsg('')
     fetch(`/api/weather?city=${trimmed}`)
       .then((res) => res.json())
       .then((data) => {
-        setCurrentWeather(data.current)
+        if (data.error) {
+          setErrorMsg(data.message)
+        } else {
+          setCurrentWeather(data.current)
+        }
+        setLoading(false)
       })
-    setSearched(true)
     setQuery('')
   }
 
@@ -102,14 +109,14 @@ export default function Home() {
       </header>
 
       <div className="mx-auto max-w-7xl px-5 py-7 lg:px-8 lg:py-10">
-        {searched && (
-          <div className="mb-5 flex items-center justify-between rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
-            <span>
-              目前顯示 <strong>{city}</strong> 的天氣。目前為展示資料，實際天氣待串接後端。
-            </span>
-            <button onClick={() => setSearched(false)} className="font-semibold underline">
-              關閉
-            </button>
+        {loading && (
+          <div className="mb-5 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+            載入中，正在取得最新天氣資料...
+          </div>
+        )}
+                {errorMsg && (
+          <div className="mb-5 rounded-lg border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {errorMsg}
           </div>
         )}
 
