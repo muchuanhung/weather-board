@@ -65,10 +65,13 @@ export default function Home() {
     fetch('/api/weather?city=Taipei')
       .then((res) => res.json())
       .then((data) => {
+        // 502／缺 key 時保留初始 state，避免 current 變 undefined 把畫面炸掉
+        if (data.error || !data.current) return
         setCurrentWeather(data.current)
-        setDaily(data.dailyForecast)
-        setHourly(data.hourlyForecast)
+        setDaily(data.dailyForecast ?? [])
+        setHourly(data.hourlyForecast ?? [])
       })
+      .catch(() => {})
   }, [])
 
   function submitSearch(event) {
@@ -78,16 +81,20 @@ export default function Home() {
     setCity(trimmed)
     setLoading(true)
     setErrorMsg('')
-    fetch(`/api/weather?city=${trimmed}`)
+    fetch(`/api/weather?city=${encodeURIComponent(trimmed)}`)
       .then((res) => res.json())
       .then((data) => {
-        if (data.error) {
-          setErrorMsg(data.message)
+        if (data.error || !data.current) {
+          setErrorMsg(data.message || '氣象資料取得失敗，請稍後再試')
         } else {
           setCurrentWeather(data.current)
-          setDaily(data.dailyForecast)
-          setHourly(data.hourlyForecast)
+          setDaily(data.dailyForecast ?? [])
+          setHourly(data.hourlyForecast ?? [])
         }
+        setLoading(false)
+      })
+      .catch(() => {
+        setErrorMsg('氣象資料取得失敗，請稍後再試')
         setLoading(false)
       })
     setQuery('')
