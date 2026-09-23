@@ -114,7 +114,7 @@ export default function Home() {
             載入中，正在取得最新天氣資料...
           </div>
         )}
-                {errorMsg && (
+        {errorMsg && (
           <div className="mb-5 rounded-lg border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
             {errorMsg}
           </div>
@@ -127,8 +127,7 @@ export default function Home() {
               目前位置
             </p>
             <div className="flex items-center gap-2">
-              <h1 className="text-3xl font-bold tracking-tight">{city}</h1>
-              <button
+              <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{city}</h1>              <button
                 aria-label="切換城市"
                 className="flex size-7 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
               >

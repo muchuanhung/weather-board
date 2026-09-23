@@ -30,7 +30,7 @@ export function WeatherIcon({ kind, size = 34 }) {
 
 export function HeroWeatherIcon() {
   return (
-    <span className="weather-sun hero-sun size-[72px]">
+    <span className="weather-sun hero-sun size-[32px] sm:size-[72px]">
       <span />
     </span>
   )

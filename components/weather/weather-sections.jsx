@@ -16,35 +16,37 @@ import { HeroWeatherIcon, WeatherIcon } from './weather-icons'
 
 export function CurrentWeatherCard({ weather }) {
   return (
-    <article className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1769aa] to-[#1c76ac] p-6 text-white shadow-lg shadow-blue-100 sm:p-8">
+    <article className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1769aa] to-[#1c76ac] p-4 text-white shadow-lg shadow-blue-100 sm:p-8">
       <div className="absolute -top-20 -right-10 size-64 rounded-full bg-white/5" />
       <div className="absolute right-20 -bottom-28 size-72 rounded-full bg-white/[0.03]" />
 
-      <div className="relative flex flex-col justify-between gap-12 sm:flex-row sm:items-start">
+      <div className="relative flex flex-col justify-between gap-2 sm:flex-row sm:items-start sm:gap-12">
         <div>
           <p className="text-sm font-medium text-blue-100">現在天氣 · 12:35 PM</p>
-          <div className="mt-4 flex items-center gap-4">
+          <div className="mt-2 flex items-center gap-3 sm:mt-4 sm:gap-4">
             <HeroWeatherIcon />
             <div>
               <div className="flex items-start">
-                <span className="text-7xl font-light tracking-tighter">{weather.temperature}</span>
-                <span className="mt-2 text-3xl font-light">°</span>
+                <span className="text-2xl font-light tracking-tighter sm:text-7xl">
+                  {weather.temperature}
+                </span>
+                <span className="text-lg font-light sm:mt-2 sm:text-3xl">°</span>
               </div>
-              <p className="text-lg font-medium">晴時多雲</p>
+              <p className="text-base font-medium sm:text-lg">晴時多雲</p>
             </div>
           </div>
         </div>
         <div className="text-left sm:text-right">
           <p className="text-sm text-blue-100">體感</p>
-          <p className="mt-1 text-2xl font-semibold">{weather.feelsLike}°</p>
-          <p className="mt-5 text-sm text-blue-100">
+          <p className="mt-1 text-lg font-semibold sm:text-2xl">{weather.feelsLike}°</p>
+          <p className="mt-2 text-sm text-blue-100 sm:mt-5">
             今日最高 <strong className="text-white">--°</strong> · 最低{' '}
             <strong className="text-white">--°</strong>
           </p>
         </div>
       </div>
 
-      <div className="relative mt-10 grid grid-cols-3 divide-x divide-white/20 border-t border-white/20 pt-5">
+      <div className="relative mt-3 grid grid-cols-3 divide-x divide-white/20 border-t border-white/20 pt-3 sm:mt-10 sm:pt-5">
         <WeatherMetric icon={<Droplets />} label="濕度" value={`${weather.humidity}%`} />
         <WeatherMetric icon={<Wind />} label="風速" value={`${weather.windSpeed} km/h`} />
         <WeatherMetric icon={<Gauge />} label="氣壓" value={`${weather.pressure} hPa`} align="end" />
@@ -56,12 +58,12 @@ export function CurrentWeatherCard({ weather }) {
 function WeatherMetric({ icon, label, value, align = 'center' }) {
   return (
     <div
-      className={`flex items-center gap-2 ${align === 'end' ? 'justify-end' : 'justify-center first:justify-start'}`}
+      className={`flex items-center gap-1.5 sm:gap-2 ${align === 'end' ? 'justify-end' : 'justify-center first:justify-start'}`}
     >
-      <span className="text-blue-100 [&>svg]:size-[19px]">{icon}</span>
+      <span className="text-blue-100 [&>svg]:size-[15px] sm:[&>svg]:size-[19px]">{icon}</span>
       <div>
-        <p className="text-xs text-blue-100">{label}</p>
-        <p className="font-semibold">{value}</p>
+        <p className="text-[10px] text-blue-100 sm:text-xs">{label}</p>
+        <p className="text-xs font-semibold sm:text-base">{value}</p>
       </div>
     </div>
   )
