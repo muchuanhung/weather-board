@@ -1,6 +1,8 @@
-# `/api/weather` 契約
+# 後端 API 契約：Weather 與 Agent
 
 給前端串接用。對應程式：[`app/api/weather/route.js`](app/api/weather/route.js)。欄位跟格式還在跟統籌、前端對，想調整的地方都可以在 PR 底下討論。
+
+本文前半部為 `/api/weather`；Agent 的新增功能與回應欄位見文末「`/api/agent` 契約」。
 
 ## 請求
 
@@ -148,3 +150,48 @@ https://weather-board-git-feat-weather-api-muchuanhungs-projects.vercel.app/api/
 ```
 
 部署與 PR 進度記錄於 [TODO-backend.md](./TODO-backend.md)。
+
+## `/api/agent` 契約（本地實作，尚未部署）
+
+```http
+POST /api/agent
+Content-Type: application/json
+
+{"city":"Taipei","question":"週末去台北還是宜蘭比較適合？"}
+```
+
+`city` 仍為必要字串，是畫面預設城市；問題中可指定其他城市。`question` 必填、最多 200 字元。查無預設城市或格式錯誤回 400；規則備援所需 CWA 資料取得失敗回 502。錯誤沿用 `{ "ok": false, "error": "訊息" }`。
+
+成功沿用 `ok: true`、`answer`、`mode: "llm" | "rules"`；LLM 模式另有 `provider: "anthropic"`。新增 `evidence` 陣列，每筆為一個成功的城市／日期查詢：
+
+- `city`：官方縣市名稱。
+- `requestedDates`：要求的臺灣日期，`YYYY-MM-DD` 陣列。
+- `daily`：所選日期實際存在的預報；欄位同 weather 的逐日預報，但 `date` 改為 `YYYY-MM-DD`，數值缺值保留 `null`。
+- `missingDates`：所選日期中沒有資料的日期，不以其他日期替代。
+- `current`、`hourly`：選到今天時提供現在天氣與逐時資料，否則分別是 `null`、`[]`。
+- `currentDataTime`：現在天氣資料的時間（可能是觀測時間或預報有效時間），未查今天或缺值時為 `null`。
+- `forecastUpdatedAt`：目前 CWA client 未保留預報發布時間，固定 `null`。不可將 `currentDataTime` 當作預報發布時間。
+- `retrievedAt`：後端取得資料的 ISO 時間，不代表上游發布時間；CWA client 可能使用 300 秒快取。
+- `source`：`name`、公開 `url` 與查詢所用 `datasets`。觀測沒有資料時仍可能退回預報，不保證每個資料集都有可用值。
+
+來源與時間也會附在 `answer` 文字（日期用「月／日」，時間轉為台灣時間；`evidence` 保留 ISO 方便程式處理），現有前端顯示 answer 即可看到；`evidence: []` 代表沒有可供該答案引用的成功查詢。
+
+### Tool Calling 與比較方式
+
+- 設定 `ANTHROPIC_API_KEY` 後，模型可呼叫 `get_weather`，指定城市與 `dayOffsets`（台北今天為 0，最多 6）。模型取得工具結果後再回答。
+- 每個模型流程最多 3 次模型請求、4 次工具嘗試、3 個城市，SDK 不自動重試；不是分散式限流。沿用 `ANTHROPIC_MODEL`，未設定時為 `claude-sonnet-5`。
+- 模型失敗、截斷或未取得工具證據時退回規則回答；只有包含「比較／還是／哪個／哪裡／哪邊」的問題才核對所有辨識到的城市、相同日期及完整雨量／高低溫，行程中提到出發地不會強制要求查出發地。規則備援辨識中文全名／簡稱，最多比較 3 個城市；英文問題中的城市抽取尚未支援，英文仍可透過 body.city 或模型工具參數查詢。
+- 規則比較列出同一組日期的高低溫與降雨機率；僅在日期、雨量都齊全時，以各城市所選日期的最高降雨機率比較，明說以少淋雨為優先。平手不選唯一推薦；缺資料不排名。這不是戶外活動安全保證。
+- 規則日期解析仍有限制，反向／跨週區間及已知限制見 [後端待辦](./TODO-backend.md)。模型的自然語言理解與推薦品質仍需真實 LLM 驗收。
+
+### 本地驗證
+
+模擬 Anthropic 與 CWA 回應，驗證工具參數、城市／次數上限、多城市 tool_result、截斷與迴圈停止、POST 的 LLM／規則模式、缺值與 502。未呼叫真實 LLM，未驗證線上部署。
+
+工具訊息流程依 [Anthropic 官方文件](https://platform.claude.com/docs/en/agents-and-tools/tool-use/handle-tool-calls) 實作。
+
+Tool Calling 與既有 `askLlm` 共用 `lib/agent-llm.js` 的 `requestLlmMessage`，保留拒答／截斷檢查。單一城市只問今天時沿用生活建議分支，不改成純預報摘要。
+
+### 9/24 真實 LLM 驗證補充
+
+已使用真實 CWA 與 Anthropic 直接測本地 POST handler 三題（6 次模型請求）。發現週末缺雨量時模型仍推薦整個週末，已補後端比較證據檢查；缺資料則回規則答案。修正後以真實證據重播及 mock POST 驗證，未再追加付費呼叫。完整結果見 [真實驗證紀錄](./app/api/agent/__tests__/REAL-VALIDATION.md)。未驗證 production 新版本及瀏覽器版面。

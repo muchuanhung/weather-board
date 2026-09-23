@@ -83,3 +83,36 @@ PR #10 合併後補修 `app/api/agent/route.js` 的規則備援路徑（未設�
 - `GET /api/weather?city=Taipei`（或約定城市名）回可被前端直接吃的 JSON
 - 至少：現在天氣＋一種預報
 - key 不進 git；線上 env 有設
+
+## Agent 下一步功能（本地完成，待複審／部署）
+
+- [x] Tool Calling：新增 `app/api/agent/tools.js`，模型自行選臺灣城市與今天起 0–6 天，後端驗證參數並回傳工具結果。
+- [x] 跨城市比較：同一組日期比較高低溫與降雨機率；規則備援可比較中文城市，資料不齊不排名。
+- [x] 回答附來源與資料時間，另回傳結構化 `evidence`；預報發布時間未知時保留 null，不冒用查詢時間。
+- [x] 更新 API-CONTRACT.md，分開說明 Weather 與 Agent 契約。
+- [x] 本地自動測試 58/58 通過；新增 6 項測試含模擬 Anthropic 的完整 POST 工具流程。修改 JS 通過 ESLint。
+- [x] `pnpm exec next build --webpack` 通過。一般 `pnpm build` 的 Turbopack 在沙箱因禁止開啟連接埠失敗。
+- [ ] 真實 LLM 回答品質與部署驗收（本輪未使用真實 key 呼叫 LLM）。
+- [ ] 複審後 commit／push／開 PR。本輪僅修改後端 Agent 及文件；未改前端；複審後調整統籌的 `lib/agent-llm.js`，讓既有問答與 Tool Calling 共用 SDK／截斷檢查，PR 須註明跨區修改。
+
+限制：最多三輪模型請求與四次工具嘗試，並非完整費用限額或公開 API 限流；沿用既有規則日期解析限制。模型端不保證每次都正確理解自然語言，正式 demo 前需實際驗收。
+
+### Tool Calling 複審修正
+
+- [x] `lib/agent-llm.js` 繼續作為共用入口；既有拒答、max_tokens 檢查保留，SDK 重試統一為 0。
+- [x] 恢復單城市「今天」的穿衣／帶傘等規則建議，補 POST 驗證。
+- [x] 非比較問題不強制查所有提到的城市，補「從台北去宜蘭」只查目的地仍保留 LLM 答案的測試。
+- [x] 顯示文字改用中文日期與台灣時間；結構化 evidence 保留 ISO。預報發布時間有值時可正常顯示。
+- [x] 逐時預報只轉換一次。
+- [ ] 統籌確認公開 API 的 WAF／分散式限流與費用上限。現有次數上限僅限制單次請求，不能取代限流。
+- [ ] 真實 LLM 與畫面驗收。本輪只用 mock，不宣稱真實回答品質已通過。
+
+PR 建議：日期修正 #11 保持獨立；本批新功能另開 PR，等待 #11 合併後更新基底，避免把新功能塞進已完成的修正審核。本輪未 commit、push 或開 PR。
+
+### 9/24 真實測試與追加修正
+
+- [x] 本地 POST handler 接真實 CWA／Anthropic，測生活建議、週末跨城市比較、只查目的地三題。6 次模型呼叫，input 6,943／output 1,030 tokens。
+- [x] 發現週末缺雨量仍獲 LLM 推薦；補 `hasComparableEvidence`，要求城市／日期一致、雨量及溫度完整，否則回規則答案。真實證據重播確認攔下，POST mock 確認不再採用過度推薦。
+- [x] 新增比較證據測試；此次完整回歸 59/59 通過。
+- 詳見 [真實驗證紀錄](./app/api/agent/__tests__/REAL-VALIDATION.md)。原有「未使用真實 LLM」為前輪紀錄，本輪已做上述有限實測。
+- [ ] 瀏覽器版面與部署驗收；公開 API 限流仍待統籌設定。本輪未 commit、push 或部署。
