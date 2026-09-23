@@ -9,6 +9,8 @@ export function WeatherAgentPanel({ city = 'Taipei', onAsk }) {
   const [answer, setAnswer] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [keyboardOffset, setKeyboardOffset] = useState(0)
+  const [viewportHeight, setViewportHeight] = useState(null)
   const textareaRef = useRef(null)
   const answerEndRef = useRef(null)
 
@@ -19,18 +21,55 @@ export function WeatherAgentPanel({ city = 'Taipei', onAsk }) {
     '未來幾小時會下雨嗎？',
   ]
 
-  // Auto-scroll to bottom when answer updates
+  useEffect(() => {
+    if (!isOpen) return
+    const vv = typeof window !== 'undefined' ? window.visualViewport : null
+    if (!vv) return
+
+    function handleResize() {
+      const offsetFromBottom = Math.max(0, window.innerHeight - vv.height - vv.offsetTop)
+      setKeyboardOffset(offsetFromBottom)
+      setViewportHeight(vv.height)
+    }
+
+    handleResize()
+    vv.addEventListener('resize', handleResize)
+    vv.addEventListener('scroll', handleResize)
+    return () => {
+      vv.removeEventListener('resize', handleResize)
+      vv.removeEventListener('scroll', handleResize)
+    }
+  }, [isOpen])
+
+  // 開面板時鎖 body scroll（避免背後頁面跟著滾）
+  useEffect(() => {
+    if (!isOpen) return
+    const scrollY = window.scrollY
+    document.body.style.position = 'fixed'
+    document.body.style.top = `-${scrollY}px`
+    document.body.style.left = '0'
+    document.body.style.right = '0'
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.position = ''
+      document.body.style.top = ''
+      document.body.style.left = ''
+      document.body.style.right = ''
+      document.body.style.overflow = ''
+      window.scrollTo(0, scrollY)
+    }
+  }, [isOpen])
+
   useEffect(() => {
     if (answerEndRef.current) {
-      answerEndRef.current.scrollIntoView({ behavior: 'smooth' })
+      answerEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
     }
   }, [answer])
 
-  // Auto-expand textarea
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto'
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 100)}px`
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 88)}px`
     }
   }, [question])
 
@@ -57,7 +96,7 @@ export function WeatherAgentPanel({ city = 'Taipei', onAsk }) {
       } else {
         setAnswer(data.answer || '暫無回答')
       }
-    } catch (err) {
+    } catch {
       setError('連線失敗，請檢查網路後再試')
     } finally {
       setLoading(false)
@@ -66,64 +105,76 @@ export function WeatherAgentPanel({ city = 'Taipei', onAsk }) {
     onAsk?.(queryText)
   }
 
-  function handleChipClick(chip) {
-    handleQuestion(chip)
-  }
-
-  function handleSendClick() {
-    handleQuestion(question)
-  }
-
   function handleKeyDown(e) {
     if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault()
-      handleSendClick()
+      handleQuestion(question)
     }
   }
 
+  // 關閉時不套用舊 keyboard offset，避免 FAB 飄位
+  const fabLift = isOpen && keyboardOffset > 0 ? keyboardOffset + 16 : 0
+  const panelLift = isOpen && keyboardOffset > 0 ? keyboardOffset + 72 : 0
+  const panelMaxHeight =
+    isOpen && viewportHeight != null ? Math.max(240, viewportHeight - 88) : undefined
+
   return (
     <>
-      {/* Floating Action Button */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/40 backdrop-blur-[2px]"
+          onClick={() => setIsOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
       <button
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
         aria-label={isOpen ? '關閉天氣小幫手' : '打開天氣小幫手'}
-        className={`fixed right-6 bottom-6 z-40 flex size-14 items-center justify-center rounded-full shadow-lg transition-all duration-200 ${
+        style={{
+          bottom: `calc(${fabLift}px + max(1rem, env(safe-area-inset-bottom)))`,
+        }}
+        className={`fixed right-4 z-40 flex size-12 items-center justify-center rounded-full shadow-lg transition-all duration-200 sm:right-6 sm:size-14 ${
           isOpen
             ? 'bg-[#1769aa] text-white hover:bg-[#1560a0]'
             : 'bg-white text-[#1769aa] hover:shadow-xl'
         }`}
       >
-        {isOpen ? <X size={24} /> : <MessageCircle size={24} />}
+        {isOpen ? <X size={22} /> : <MessageCircle size={22} />}
       </button>
 
-      {/* Panel Card */}
       {isOpen && (
-        <div className="animate-in fade-in slide-in-from-bottom-4 pb-safe fixed right-6 bottom-24 z-50 w-full max-w-sm duration-200">
-          <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xl">
-            {/* Header */}
-            <div className="border-b border-slate-100 bg-gradient-to-r from-[#1769aa] to-[#1560a0] px-5 py-4 text-white">
+        <div
+          style={{
+            bottom: `calc(${panelLift}px + max(4.5rem, calc(3.5rem + env(safe-area-inset-bottom))))`,
+            maxHeight: panelMaxHeight != null ? `${panelMaxHeight}px` : undefined,
+          }}
+          className="fixed inset-x-3 z-50 mx-auto flex w-auto max-w-sm flex-col sm:inset-x-auto sm:right-6 sm:left-auto sm:w-full"
+        >
+          <div className="flex max-h-[min(32rem,calc(100dvh-7.5rem))] min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xl">
+            <div className="shrink-0 border-b border-slate-100 bg-gradient-to-r from-[#1769aa] to-[#1560a0] px-4 py-3 text-white sm:px-5 sm:py-4">
               <div className="flex items-center gap-2">
-                <Sparkles size={18} />
-                <div>
+                <Sparkles size={18} className="shrink-0" />
+                <div className="min-w-0">
                   <h2 className="font-semibold">天氣小幫手</h2>
-                  <p className="text-xs text-blue-100">依目前天氣回答</p>
+                  <p className="truncate text-xs text-blue-100">依目前天氣回答 · {city}</p>
                 </div>
               </div>
             </div>
 
-            {/* Content */}
-            <div className="flex max-h-[70vh] flex-col overflow-hidden">
-              {/* Quick Questions — 常駐，回答後仍可再點 */}
-              <div className="border-b border-slate-100 px-4 py-4">
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+              {/* 手機：橫向滑動 chips，少佔高 */}
+              <div className="shrink-0 border-b border-slate-100 px-3 py-3 sm:px-4 sm:py-4">
                 <p className="mb-2 text-xs font-medium text-slate-600">快速提問</p>
-                <div className="flex flex-wrap gap-2">
+                <div className="-mx-1 flex [scrollbar-width:none] gap-2 overflow-x-auto px-1 pb-1 [-ms-overflow-style:none] sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden">
                   {quickQuestions.map((chip) => (
                     <button
                       key={chip}
                       type="button"
-                      onClick={() => handleChipClick(chip)}
+                      onClick={() => handleQuestion(chip)}
                       disabled={loading}
-                      className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-100 disabled:opacity-50"
+                      className="shrink-0 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium whitespace-nowrap text-slate-700 transition hover:bg-slate-100 disabled:opacity-50"
                     >
                       {chip}
                     </button>
@@ -131,8 +182,7 @@ export function WeatherAgentPanel({ city = 'Taipei', onAsk }) {
                 </div>
               </div>
 
-              {/* Answer Area */}
-              <div className="min-h-[4.5rem] flex-1 overflow-y-auto px-4 py-4">
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3 sm:py-4">
                 {!answer && !loading && !error && (
                   <p className="text-sm text-slate-400">點上方快捷問題，或自行輸入提問。</p>
                 )}
@@ -150,15 +200,14 @@ export function WeatherAgentPanel({ city = 'Taipei', onAsk }) {
                 )}
                 {answer && !loading && (
                   <div>
-                    <p className="text-sm leading-6 text-slate-700">{answer}</p>
+                    <p className="text-sm leading-6 break-words text-slate-700">{answer}</p>
                     <div ref={answerEndRef} />
                   </div>
                 )}
               </div>
 
-              {/* Input Area */}
-              <div className="border-t border-slate-100 bg-slate-50 p-4">
-                <div className="mb-2 flex gap-2">
+              <div className="shrink-0 border-t border-slate-100 bg-slate-50 p-3 sm:p-4">
+                <div className="mb-1 flex items-end gap-2">
                   <textarea
                     ref={textareaRef}
                     value={question}
@@ -167,14 +216,16 @@ export function WeatherAgentPanel({ city = 'Taipei', onAsk }) {
                     placeholder="問我今天天氣相關問題…"
                     disabled={loading}
                     rows={1}
-                    className="flex-1 resize-none rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm placeholder-slate-400 transition outline-none focus:border-[#1769aa] focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100 disabled:text-slate-500"
-                    style={{ maxHeight: '100px', minHeight: '40px' }}
+                    enterKeyHint="send"
+                    className="min-w-0 flex-1 resize-none rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm placeholder-slate-400 transition outline-none focus:border-[#1769aa] focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100 disabled:text-slate-500"
+                    style={{ maxHeight: '88px', minHeight: '40px' }}
                   />
                   <button
-                    onClick={handleSendClick}
+                    type="button"
+                    onClick={() => handleQuestion(question)}
                     disabled={loading || !question.trim()}
                     aria-label="送出提問"
-                    className="flex size-10 items-center justify-center rounded-lg bg-[#1769aa] text-white transition hover:bg-[#1560a0] disabled:bg-slate-300"
+                    className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[#1769aa] text-white transition hover:bg-[#1560a0] disabled:bg-slate-300"
                   >
                     <Send size={18} />
                   </button>

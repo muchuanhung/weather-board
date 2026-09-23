@@ -25,30 +25,70 @@ async function getWeather({ countyName, stationName }) {
     fetchHourlyForecast(countyName),
     fetchWeeklyForecast(countyName),
   ])
+  const daily = buildDailyForecast(weeklyLocation, 7)
   return {
     current: buildCurrentWeather({ observation, hourlyLocation }),
     hourly: buildHourlyForecast(hourlyLocation),
-    today: buildDailyForecast(weeklyLocation, 1)[0] ?? null,
+    daily,
+    today: daily[0] ?? null,
   }
 }
 
-function formatContext(countyName, { current, hourly, today }) {
+function formatContext(countyName, { current, hourly, daily, today }) {
   const hours = hourly
     .map((h) => `${h.time} ${fmt(h.temperature, '°C')} ${KIND_TEXT[h.kind] ?? ''}`)
     .join('、')
+
+  const dailyLines = daily.map(
+    (d) =>
+      `${d.day}（${d.date}）：最高 ${fmt(d.high, '°C')}、最低 ${fmt(d.low, '°C')}，降雨機率 ${fmt(d.rainChance, '%')}`
+  )
+
   return [
     `城市：${countyName}`,
     `現在：${current.description}，氣溫 ${fmt(current.temperature, '°C')}，體感 ${fmt(current.feelsLike, '°C')}，濕度 ${fmt(current.humidity, '%')}，紫外線指數 ${fmt(current.uvIndex, '')}`,
-    today
-      ? `今天：最高 ${fmt(today.high, '°C')}、最低 ${fmt(today.low, '°C')}，12 小時降雨機率 ${fmt(today.rainChance, '%')}`
-      : '今天：暫無預報資料',
     `未來逐時：${hours || '暫無資料'}`,
+    '未來幾天預報：',
+    ...(dailyLines.length ? dailyLines : ['暫無預報資料']),
   ].join('\n')
 }
 
-function answerByRules(question, countyName, { current, hourly, today }) {
+function findDayByPattern(daily, pattern) {
+  const dayMap = {
+    週末: (d) => d.day === '週六' || d.day === '週日',
+    週六: (d) => d.day === '週六',
+    週日: (d) => d.day === '週日',
+    明天: (d) => d.day === '明天',
+    後天: (d) => daily.indexOf(d) === 2,
+    週一: (d) => d.day === '週一',
+    週二: (d) => d.day === '週二',
+    週三: (d) => d.day === '週三',
+    週四: (d) => d.day === '週四',
+    週五: (d) => d.day === '週五',
+  }
+  for (const [key, matcher] of Object.entries(dayMap)) {
+    if (pattern.includes(key)) return daily.filter(matcher)
+  }
+  return []
+}
+
+function formatDayForecast(d) {
+  return `${d.day}（${d.date}）最高 ${fmt(d.high, '°C')}、最低 ${fmt(d.low, '°C')}，降雨機率 ${fmt(d.rainChance, '%')}`
+}
+
+function answerByRules(question, countyName, { current, hourly, daily, today }) {
   const rain = today?.rainChance ?? null
   const rainyHours = hourly.filter((h) => h.kind === 'rain').map((h) => h.time)
+
+  // Multi-day / weekend questions
+  if (/週末|週六|週日|明天|後天|週一|週二|週三|週四|週五/.test(question)) {
+    const matched = findDayByPattern(daily, question)
+    if (matched.length) {
+      const forecast = matched.map(formatDayForecast).join('；')
+      return `${countyName}${forecast}。`
+    }
+    return `${countyName}目前預報資料中沒有該日期的天氣資訊。`
+  }
 
   if (/傘|雨/.test(question)) {
     if (rainyHours.length) {
