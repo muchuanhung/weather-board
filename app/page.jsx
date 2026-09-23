@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { ChevronDown, MapPin, Search, Sunrise } from 'lucide-react'
 
+import WeatherAgentPanel from '@/components/weather/weather-agent-panel'
 import {
   CurrentWeatherCard,
   DailyForecast,
@@ -190,6 +191,8 @@ export default function Home() {
           weather-board · 為Wehelp團隊打造的天氣資訊工具
         </footer>
       </div>
+
+      <WeatherAgentPanel city={city} />
     </main>
   )
 }
