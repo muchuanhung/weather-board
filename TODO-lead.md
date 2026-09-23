@@ -34,26 +34,29 @@
 
 ## 9/23（三）
 
-- [ ] 盯進度：後端 shape／API、前端 props／fetch 是否對齊契約
+- [x] 盯進度：後端 shape／API、前端 props／fetch 是否對齊契約
 - [x] 解卡關（契約爭議、env、權限）；仍不進 A／B 業務檔
 - [x] CI 綠燈維持；必要時補環境變數說明（不把 key 寫進 git）
 - [x] 投影片簡報大綱起稿（分工、demo、接法、心得）
+- [x] Discord 推播：Webhook + 降雨門檻 + Vercel Cron（台北 08:00／17:00）→ `#bot`
+  - 端點：`/api/discord/notify`（`CRON_SECRET` 保護）；env 名見 `.env.example`
+  - README 只留公開摘要；curl／force／錯誤碼細節不寫進公開 README（避免當攻擊說明書）
 
 ## 9/24（四）中午前
 
-- [ ] 合併前後端進 `main`；修衝突（只協調，業務碼仍歸原負責人）
+- [x] 合併前後端進 `main`；修衝突（只協調，業務碼仍歸原負責人）
 - [ ] 串起來驗收：現在天氣＋簡單預報、搜尋／城市有作用
-- [ ] README 補齊：分工表、線上成果連結
-- [ ] 截圖至少一張（桌機或手機）
+- [x] README 補齊：分工表、線上成果連結
+- [x] 截圖至少一張（桌機或手機）
 
 ## 9/24（四）23:59 前
 
 - [ ] Host Repo 連結私訊彭彭
-- [ ] 投影片簡報初稿完成（可交）← **目前剩這塊**
+- [x] 投影片簡報初稿完成（可交）
 - [ ] 線上連結再確認一次能開
 
 ## 本週驗收（統籌視角）
 
 - 規格書有、排程有、兩人待辦有人勾
 - Host 可交、線上可開、README 有分工＋連結
-- 投影片簡報初稿交得出；Webhook／Agent 沒做就寫下一步，不硬充
+- Discord Webhook 推播可 demo（線上需設好 `DISCORD_WEBHOOK_URL`、`CRON_SECRET`）
