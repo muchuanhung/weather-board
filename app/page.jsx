@@ -127,7 +127,8 @@ export default function Home() {
               目前位置
             </p>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{city}</h1>              <button
+              <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{city}</h1>{' '}
+              <button
                 aria-label="切換城市"
                 className="flex size-7 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
               >

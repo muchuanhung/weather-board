@@ -49,7 +49,12 @@ export function CurrentWeatherCard({ weather }) {
       <div className="relative mt-3 grid grid-cols-3 divide-x divide-white/20 border-t border-white/20 pt-3 sm:mt-10 sm:pt-5">
         <WeatherMetric icon={<Droplets />} label="濕度" value={`${weather.humidity}%`} />
         <WeatherMetric icon={<Wind />} label="風速" value={`${weather.windSpeed} km/h`} />
-        <WeatherMetric icon={<Gauge />} label="氣壓" value={`${weather.pressure} hPa`} align="end" />
+        <WeatherMetric
+          icon={<Gauge />}
+          label="氣壓"
+          value={`${weather.pressure} hPa`}
+          align="end"
+        />
       </div>
     </article>
   )
@@ -119,8 +124,9 @@ export function HourlyForecast() {
         {hourlyForecast.map((entry, index) => (
           <div
             key={entry.time}
-            className={`flex min-w-[82px] flex-1 flex-col items-center gap-3 border-r border-slate-100 px-2 last:border-0 ${index === 0 ? 'text-[#1769aa]' : ''
-              }`}
+            className={`flex min-w-[82px] flex-1 flex-col items-center gap-3 border-r border-slate-100 px-2 last:border-0 ${
+              index === 0 ? 'text-[#1769aa]' : ''
+            }`}
           >
             <span className="text-xs font-medium">{entry.time}</span>
             <WeatherIcon kind={entry.kind} size={30} />
