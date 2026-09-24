@@ -253,13 +253,29 @@ export function SunCard({ weather }) {
               {weather.sunrise}
             </p>
           </div>
-          <div
-            className={`relative mx-5 mb-3 h-px flex-1 border-t border-dashed ${daytime ? 'border-slate-200' : 'border-slate-600'}`}
-          >
+          <div className="relative mx-5 mb-3 h-6 flex-1">
+            <svg
+              viewBox="0 0 100 24"
+              preserveAspectRatio="none"
+              className="h-full w-full"
+              aria-hidden="true"
+            >
+              <path
+                d="M 0 24 Q 50 -22 100 24"
+                fill="none"
+                vectorEffect="non-scaling-stroke"
+                strokeWidth="1"
+                strokeDasharray="3 3"
+                stroke={daytime ? '#cbd5e1' : '#64748b'}
+              />
+            </svg>
             {nowProgress != null && (
               <div
-                className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2"
-                style={{ left: `${nowProgress}%` }}
+                className="absolute -translate-x-1/2 -translate-y-1/2"
+                style={{
+                  left: `${nowProgress}%`,
+                  top: `${(((1 - nowProgress / 100) ** 2 * 24 + 2 * (1 - nowProgress / 100) * (nowProgress / 100) * -22 + (nowProgress / 100) ** 2 * 24) / 24) * 100}%`,
+                }}
               >
                 <div
                   className={`size-2.5 rounded-full border-2 border-white shadow ${daytime ? 'bg-amber-400' : 'bg-slate-400'}`}
