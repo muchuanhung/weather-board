@@ -206,7 +206,7 @@ export default function Home() {
         )}
 
         <section className="relative z-20 mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div className="animate-fade-in-left">
+          <div className="animate-fade-in-left relative z-10">
             <div className="relative flex items-center gap-2" ref={cityMenuRef}>
               <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{city}</h1>
               <button
