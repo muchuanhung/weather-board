@@ -39,6 +39,15 @@ function uvColor(uv) {
   return '#6b7280'
 }
 
+function uvColorDark(uv) {
+  if (uv == null) return '#cbd5e1'
+  if (uv >= 11) return '#c4b5fd'
+  if (uv >= 8) return '#cbb8f5'
+  if (uv >= 6) return '#d6c9f7'
+  if (uv >= 3) return '#e0d7fa'
+  return '#ece7f5'
+}
+
 function uvPosition(uv) {
   if (uv == null || Number.isNaN(Number(uv))) return null
   const value = Math.min(Math.max(Number(uv), 0), 11)
@@ -48,6 +57,17 @@ function uvPosition(uv) {
 function toMinutes(timeStr) {
   const [h, m] = timeStr.split(':').map(Number)
   return h * 60 + m
+}
+
+function isDaytime(sunrise, sunset) {
+  if (!sunrise || !sunset || sunrise.includes('-') || sunset.includes('-')) {
+    return true
+  }
+  const start = toMinutes(sunrise)
+  const end = toMinutes(sunset)
+  const nowDate = new Date()
+  const nowMin = nowDate.getHours() * 60 + nowDate.getMinutes()
+  return nowMin >= start && nowMin <= end
 }
 
 function getSunProgress(sunrise, sunset) {
@@ -201,52 +221,81 @@ function WeatherMetric({ icon, label, value, align = 'center' }) {
 
 export function SunCard({ weather }) {
   const nowProgress = getSunProgress(weather.sunrise, weather.sunset)
+  const daytime = isDaytime(weather.sunrise, weather.sunset)
 
   return (
-    <aside className="animate-fade-in-up rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm sm:p-6">
+    <aside
+      className={`animate-fade-in-up rounded-2xl border p-4 shadow-sm transition-colors duration-500 sm:p-6 ${daytime ? 'border-slate-200/80 bg-white' : 'border-slate-700 bg-[#33415c]'}`}
+    >
       <div className="animate-card-content">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-sm font-semibold">日出與日落</p>
-            <p className="mt-0.5 text-xs text-slate-500 sm:mt-1">今日天文資訊</p>
-          </div>
-          <div className="rounded-lg bg-amber-50 p-1.5 text-amber-500 sm:p-2">
-            <Sunrise size={16} className="sm:hidden" />
-            <Sunrise size={20} className="hidden sm:block" />
+            <p className={`text-sm font-semibold ${daytime ? '' : 'text-slate-100'}`}>日出與日落</p>
+            <p
+              className={`mt-0.5 text-xs sm:mt-1 ${daytime ? 'text-slate-500' : 'text-slate-300'}`}
+            >
+              今日天文資訊
+            </p>
           </div>
         </div>
 
         <div className="mt-4 flex items-end justify-between sm:mt-7">
           <div>
-            <p className="flex items-center gap-1.5 text-xs text-slate-500 sm:gap-2">
+            <p
+              className={`flex items-center gap-1.5 text-xs sm:gap-2 ${daytime ? 'text-slate-500' : 'text-slate-300'}`}
+            >
               <Sunrise size={12} className="text-amber-500 sm:size-[15px]" />
               日出
             </p>
-            <p className="mt-1 text-lg font-semibold sm:text-2xl">{weather.sunrise}</p>
+            <p
+              className={`mt-1 text-lg font-semibold sm:text-2xl ${daytime ? '' : 'text-slate-100'}`}
+            >
+              {weather.sunrise}
+            </p>
           </div>
-          <div className="relative mx-5 mb-3 h-px flex-1 border-t border-dashed border-slate-200">
+          <div
+            className={`relative mx-5 mb-3 h-px flex-1 border-t border-dashed ${daytime ? 'border-slate-200' : 'border-slate-600'}`}
+          >
             {nowProgress != null && (
               <div
                 className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2"
                 style={{ left: `${nowProgress}%` }}
               >
-                <div className="size-2.5 rounded-full border-2 border-white bg-amber-400 shadow" />
+                <div
+                  className={`size-2.5 rounded-full border-2 border-white shadow ${daytime ? 'bg-amber-400' : 'bg-slate-400'}`}
+                />
               </div>
             )}
           </div>
           <div className="text-right">
-            <p className="flex items-center justify-end gap-1.5 text-xs text-slate-500 sm:gap-2">
+            <p
+              className={`flex items-center justify-end gap-1.5 text-xs sm:gap-2 ${daytime ? 'text-slate-500' : 'text-slate-300'}`}
+            >
               日落 <Sunset size={12} className="text-orange-400 sm:size-[15px]" />
             </p>
-            <p className="mt-1 text-lg font-semibold sm:text-2xl">{weather.sunset}</p>
+            <p
+              className={`mt-1 text-lg font-semibold sm:text-2xl ${daytime ? '' : 'text-slate-100'}`}
+            >
+              {weather.sunset}
+            </p>
           </div>
         </div>
 
-        <div className="mt-3 rounded-lg bg-slate-50 px-3 py-2.5 sm:mt-7 sm:px-4 sm:py-3">
-          <div className="flex items-center gap-2 text-[11px] text-slate-600 sm:text-xs">
-            <Activity size={13} className="text-[#1769aa] sm:size-[15px]" />
+        <div
+          className={`mt-3 rounded-lg px-3 py-2.5 sm:mt-7 sm:px-4 sm:py-3 ${daytime ? 'bg-slate-50' : 'bg-white/10'}`}
+        >
+          <div
+            className={`flex items-center gap-2 text-[11px] sm:text-xs ${daytime ? 'text-slate-600' : 'text-slate-200'}`}
+          >
+            <Activity
+              size={13}
+              className={`sm:size-[15px] ${daytime ? 'text-[#1769aa]' : 'text-slate-300'}`}
+            />
             紫外線指數
-            <strong className="ml-auto" style={{ color: uvColor(weather.uvIndex) }}>
+            <strong
+              className="ml-auto"
+              style={{ color: daytime ? uvColor(weather.uvIndex) : uvColorDark(weather.uvIndex) }}
+            >
               {uvLevelText(weather.uvIndex)} ({weather.uvIndex})
             </strong>
           </div>
@@ -267,7 +316,9 @@ export function SunCard({ weather }) {
               </div>
             )}
           </div>
-          <div className="mt-2 hidden justify-between text-xs text-slate-500 sm:flex">
+          <div
+            className={`mt-2 hidden justify-between text-xs sm:flex ${daytime ? 'text-slate-500' : 'text-slate-300'}`}
+          >
             <span>0</span>
             <span>3</span>
             <span>6</span>
