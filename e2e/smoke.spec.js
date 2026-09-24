@@ -1,8 +1,11 @@
 import { expect, test } from '@playwright/test'
 
+import { mockWeatherOk } from './mock-weather.js'
+
 // 只驗「頁面活著、主要區塊有渲染、搜尋框在」。
 
 test('首頁可以開，主標題與搜尋框都在', async ({ page }) => {
+  await mockWeatherOk(page)
   const response = await page.goto('/')
   expect(response?.status()).toBe(200)
 
@@ -14,6 +17,7 @@ test('首頁可以開，主標題與搜尋框都在', async ({ page }) => {
 })
 
 test('搜尋城市後，主標題會換成輸入的城市', async ({ page }) => {
+  await mockWeatherOk(page)
   await page.goto('/')
 
   const search = page.getByLabel('搜尋城市')
