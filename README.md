@@ -1,5 +1,7 @@
 # weather-board
 
+[![weather-board demo](docs/demo.gif)](https://weather-board-liart.vercel.app/)
+
 Wehelp 三人小組的氣象看板。
 
 ## 網站
@@ -24,7 +26,7 @@ Wehelp 三人小組的氣象看板。
 | 切塊 | 路徑                                                                                         |
 | ---- | -------------------------------------------------------------------------------------------- |
 | A    | `lib/weather-data.js`、`app/api/weather/`                                                    |
-| B    | `app/page.jsx`、`components/weather/*`、`app/globals.css`                                     |
+| B    | `app/page.jsx`、`components/weather/*`、`app/globals.css`                                    |
 | C    | Discord／Cron（`app/api/discord/`、`vercel.json`）、README／TODO、CI／部署；Agent 為選做整合 |
 
 跨區改檔（例如 `app/api/agent/`、`lib/agent-llm.js`）→ PR 勾選「有碰到別人的檔案」並在群裡說明。
