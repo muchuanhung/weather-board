@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { ChevronDown, MapPin, Search, Sunrise } from 'lucide-react'
+import { ChevronDown, Search, Sunrise } from 'lucide-react'
 
 import {
   CurrentWeatherCard,
@@ -122,7 +122,6 @@ export default function Home() {
   }, [cityMenuOpen])
 
   function loadCity(name) {
-    setCity(name)
     setLoading(true)
     setErrorMsg('')
     fetch(`/api/weather?city=${encodeURIComponent(name)}`)
@@ -131,6 +130,7 @@ export default function Home() {
         if (data.error || !data.current) {
           setErrorMsg(data.message || '氣象資料取得失敗，請稍後再試')
         } else {
+          setCity(name)
           setCurrentWeather(data.current)
           setDaily(data.dailyForecast ?? [])
           setHourly(data.hourlyForecast ?? [])
@@ -207,10 +207,6 @@ export default function Home() {
 
         <section className="relative z-20 mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="animate-fade-in-left">
-            <p className="mb-2 flex items-center gap-1.5 text-sm font-medium text-slate-600">
-              <MapPin size={15} className="text-[#1769aa]" />
-              目前位置
-            </p>
             <div className="relative flex items-center gap-2" ref={cityMenuRef}>
               <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{city}</h1>
               <button
