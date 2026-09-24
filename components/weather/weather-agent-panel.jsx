@@ -13,6 +13,7 @@ export function WeatherAgentPanel({ city = 'Taipei', onAsk }) {
   const [viewportHeight, setViewportHeight] = useState(null)
   const textareaRef = useRef(null)
   const answerEndRef = useRef(null)
+  const requestIdRef = useRef(0)
 
   const quickQuestions = [
     '今天要帶傘嗎？',
@@ -77,6 +78,7 @@ export function WeatherAgentPanel({ city = 'Taipei', onAsk }) {
     if (!q.trim()) return
 
     const queryText = q.trim()
+    const requestId = ++requestIdRef.current
     setQuestion('')
     setAnswer('')
     setError('')
@@ -87,19 +89,32 @@ export function WeatherAgentPanel({ city = 'Taipei', onAsk }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ city, question: queryText }),
+        signal: AbortSignal.timeout(25_000),
       })
 
-      const data = await response.json()
+      const data = await response.json().catch(() => null)
+      if (requestId !== requestIdRef.current) return
 
-      if (!data.ok) {
-        setError(data.error || '無法取得回答，請稍後再試')
-      } else {
-        setAnswer(data.answer || '暫無回答')
+      if (!data) {
+        setError('回應格式錯誤，請稍後再試')
+        return
       }
+
+      // 後端 ok:false（或舊版 400）→ 仍寫進答案區，避免「loading 完一片空白」
+      if (!data.ok) {
+        const msg = data.error || '無法取得回答，請稍後再試'
+        setError(msg)
+        setAnswer(msg)
+        return
+      }
+
+      setAnswer(data.answer || '暫無回答')
     } catch {
-      setError('連線失敗，請檢查網路後再試')
+      if (requestId !== requestIdRef.current) return
+      setError('連線逾時或失敗，請稍後再試')
+      setAnswer('連線逾時或失敗，請稍後再試')
     } finally {
-      setLoading(false)
+      if (requestId === requestIdRef.current) setLoading(false)
     }
 
     onAsk?.(queryText)

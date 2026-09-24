@@ -142,9 +142,15 @@ export async function POST(request) {
     return NextResponse.json({ ok: false, error: '提問過長，請保持在 200 字以內' }, { status: 400 })
   }
 
+  const q = question.trim()
   const resolved = resolveCity(city)
+
   if (!resolved) {
-    return NextResponse.json({ ok: false, error: `找不到城市「${city}」` }, { status: 400 })
+    return NextResponse.json({
+      ok: true,
+      answer: `目前天氣小幫手只支援台灣縣市，還沒有「${city}」的資料。可以改搜台北、高雄等城市再問我。`,
+      mode: 'rules',
+    })
   }
 
   let weather
@@ -155,7 +161,6 @@ export async function POST(request) {
     return NextResponse.json({ ok: false, error: '氣象資料取得失敗，請稍後再試' }, { status: 502 })
   }
 
-  const q = question.trim()
   const context = formatContext(resolved.countyName, weather)
 
   try {
