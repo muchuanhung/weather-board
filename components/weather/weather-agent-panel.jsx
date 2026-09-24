@@ -1,7 +1,17 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { MessageCircle, Send, X, Sparkles } from 'lucide-react'
+import { MessageCircle, Send, X, Sparkles, ChevronDown } from 'lucide-react'
+
+function splitAnswer(text) {
+  if (!text) return { main: '', source: '' }
+  const index = text.indexOf('資料依據')
+  if (index === -1) return { main: text.trim(), source: '' }
+  return {
+    main: text.slice(0, index).trim(),
+    source: text.slice(index).trim(),
+  }
+}
 
 export function WeatherAgentPanel({ city = 'Taipei', onAsk }) {
   const [isOpen, setIsOpen] = useState(false)
@@ -9,11 +19,14 @@ export function WeatherAgentPanel({ city = 'Taipei', onAsk }) {
   const [answer, setAnswer] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showSource, setShowSource] = useState(false)
   const [keyboardOffset, setKeyboardOffset] = useState(0)
   const [viewportHeight, setViewportHeight] = useState(null)
   const textareaRef = useRef(null)
   const answerEndRef = useRef(null)
   const requestIdRef = useRef(0)
+
+  const { main: answerMain, source: answerSource } = splitAnswer(answer)
 
   const quickQuestions = [
     '今天要帶傘嗎？',
@@ -42,21 +55,26 @@ export function WeatherAgentPanel({ city = 'Taipei', onAsk }) {
     }
   }, [isOpen])
 
-  // 開面板時鎖 body scroll（避免背後頁面跟著滾）
+  // 開面板時鎖 body scroll（避免背後頁面跟著滾），並補回捲軸寬度避免版面位移
   useEffect(() => {
     if (!isOpen) return
     const scrollY = window.scrollY
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth
     document.body.style.position = 'fixed'
     document.body.style.top = `-${scrollY}px`
     document.body.style.left = '0'
     document.body.style.right = '0'
     document.body.style.overflow = 'hidden'
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${scrollbarWidth}px`
+    }
     return () => {
       document.body.style.position = ''
       document.body.style.top = ''
       document.body.style.left = ''
       document.body.style.right = ''
       document.body.style.overflow = ''
+      document.body.style.paddingRight = ''
       window.scrollTo(0, scrollY)
     }
   }, [isOpen])
@@ -82,6 +100,7 @@ export function WeatherAgentPanel({ city = 'Taipei', onAsk }) {
     setQuestion('')
     setAnswer('')
     setError('')
+    setShowSource(false)
     setLoading(true)
 
     try {
@@ -215,7 +234,30 @@ export function WeatherAgentPanel({ city = 'Taipei', onAsk }) {
                 )}
                 {answer && !loading && (
                   <div>
-                    <p className="text-sm leading-6 break-words text-slate-700">{answer}</p>
+                    <p className="text-sm leading-6 break-words text-slate-700">{answerMain}</p>
+
+                    {answerSource && (
+                      <div className="mt-3 border-t border-slate-100 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => setShowSource(!showSource)}
+                          aria-expanded={showSource}
+                          className="flex items-center gap-1 text-xs font-medium text-slate-500 transition hover:text-[#1769aa]"
+                        >
+                          查看資料來源
+                          <ChevronDown
+                            size={14}
+                            className={`transition-transform duration-200 ${showSource ? 'rotate-180' : ''}`}
+                          />
+                        </button>
+                        {showSource && (
+                          <p className="mt-2 text-[11px] leading-5 break-words text-slate-500">
+                            {answerSource}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
                     <div ref={answerEndRef} />
                   </div>
                 )}
