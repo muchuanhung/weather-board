@@ -30,12 +30,13 @@ const UV_SCALE = [
 ]
 
 function uvColor(uv) {
-  if (uv == null) return '#94a3b8'
-  if (uv >= 11) return '#5f3a9e'
-  if (uv >= 8) return '#7f56c4'
-  if (uv >= 6) return '#9b7cd4'
-  if (uv >= 3) return '#a98fd8'
-  return '#b9a4e0'
+  // 文字色需過 WCAG AA（白底）；色條仍用 UV_SCALE 漸層
+  if (uv == null) return '#64748b'
+  if (uv >= 11) return '#4c1d95'
+  if (uv >= 8) return '#5b21b6'
+  if (uv >= 6) return '#6d28d9'
+  if (uv >= 3) return '#7c3aed'
+  return '#6b7280'
 }
 
 function uvPosition(uv) {
