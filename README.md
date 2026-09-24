@@ -19,6 +19,16 @@ Wehelp 三人小組的氣象看板。
 | 前端 | 鍾旻瑞 | B. 介面與互動       | 頁面結構、列表／詳情、接上資料、基本操作（搜尋、切換城市）；版面／色票／RWD 一併收斂 |
 | 統籌 | 洪睦筌 | C. 規格／排程／交付 | 開規格書、確認排程、跑 CI、Discord 推播、部署、README 連結、截圖、簡報、整合 demo    |
 
+### 檔案認領
+
+| 切塊 | 路徑                                                                                         |
+| ---- | -------------------------------------------------------------------------------------------- |
+| A    | `lib/weather-data.js`、`app/api/weather/`                                                    |
+| B    | `app/page.jsx`、`components/weather/*`、`app/globals.css`                                    |
+| C    | Discord／Cron（`app/api/discord/`、`vercel.json`）、README／TODO、CI／部署；Agent 為選做整合 |
+
+跨區改檔（例如 `app/api/agent/`、`lib/agent-llm.js`）→ PR 勾選「有碰到別人的檔案」並在群裡說明。
+
 ### 待辦清單
 
 - 統籌：[TODO-lead.md](./TODO-lead.md)（洪睦筌）
@@ -34,6 +44,8 @@ pnpm dev
 
 開 http://localhost:3000 。
 
+環境變數見 [`.env.example`](./.env.example)（`CWA_API_KEY`、`ANTHROPIC_API_KEY`、Discord 相關）。
+
 ## 天氣 API
 
 `GET /api/weather?city=Taipei`，資料源為中央氣象署（CWA）；契約見 [`API-CONTRACT.md`](./API-CONTRACT.md)（`current` / `hourlyForecast` / `dailyForecast`）。
@@ -42,7 +54,10 @@ Discord 推播另走 Open-Meteo（`lib/weather-source.js`），不經這支 rout
 
 ## 天氣小幫手（Agent）
 
-- Props：`{ city: string }`，與首頁天氣區塊共用同一個 `city` state。
+- UI：`components/weather/weather-agent-panel.jsx`，props `{ city }`，與首頁同一 `city` state。
+- API：`POST /api/agent`（body `{ city, question }`）；契約見 [`API-CONTRACT.md`](./API-CONTRACT.md) 文末。
+- 有 `ANTHROPIC_API_KEY` → Claude（可 Tool Calling）；沒 key／失敗 → 規則備援，不壞。
+- 未知城市 soft reply（不硬 400）；面板 25s 逾時、競態不空白。
 - 快捷問題：今天要帶傘嗎？／晚上會冷嗎？／適合戶外運動嗎？／未來幾小時會下雨嗎？
 
 ## Discord 推播
