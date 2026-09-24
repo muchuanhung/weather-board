@@ -257,7 +257,6 @@ export async function POST(request) {
     })
   }
 
-  const q = question.trim()
   const now = new Date()
   const weatherCache = new Map()
   const loadWeather = (resolvedCity) => {

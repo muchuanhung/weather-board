@@ -177,7 +177,7 @@ export default function Home() {
             </div>
             <div>
               <p className="text-lg font-bold tracking-tight">weather-board</p>
-              <p className="text-xs text-slate-500">Taiwan weather, at a glance</p>
+              <p className="text-xs text-slate-600">Taiwan weather, at a glance</p>
             </div>
           </div>
           <form onSubmit={submitSearch} className="relative w-full sm:w-72" role="search">
@@ -207,7 +207,7 @@ export default function Home() {
 
         <section className="relative z-20 mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="animate-fade-in-left">
-            <p className="mb-2 flex items-center gap-1.5 text-sm font-medium text-slate-600">
+            <p className="mb-2 flex items-center gap-1.5 text-sm font-medium text-slate-700">
               <MapPin size={15} className="text-[#1769aa]" />
               目前位置
             </p>
@@ -243,18 +243,18 @@ export default function Home() {
                 </div>
               )}
             </div>
-            <p className="mt-1 text-sm text-slate-600" suppressHydrationWarning>
+            <p className="mt-1 text-sm text-slate-700" suppressHydrationWarning>
               {today && now ? `${today} · ${now}` : '\u00A0'}
             </p>
           </div>
-          <div className="animate-fade-in-right flex items-center gap-2 text-sm text-slate-600">
+          <div className="animate-fade-in-right flex items-center gap-2 text-sm text-slate-700">
             <span className="size-2 rounded-full bg-emerald-500" />
             {updatedLabel}
           </div>
         </section>
 
         {!ready && (
-          <div className="py-24 text-center text-sm text-slate-400">
+          <div className="py-24 text-center text-sm text-slate-600">
             載入中，正在取得天氣資料...
           </div>
         )}

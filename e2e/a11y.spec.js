@@ -27,18 +27,35 @@ function report({ violations, incomplete }) {
     .map((violation) => `${violation.impact}/${violation.id}（${violation.nodes.length} 處）`)
 }
 
-test('首頁沒有 critical/serious 等級的無障礙問題', async ({ page }) => {
+async function gotoReady(page) {
   await page.goto('/')
+  // 只在 a11y 掃關掉進場動畫（不改 globals.css），避免 axe 掃到 opacity<1 假陽性
+  await page.addStyleTag({
+    content: `
+      .animate-fade-in-up,
+      .animate-fade-in-left,
+      .animate-fade-in-right,
+      .animate-card-content {
+        animation: none !important;
+      }
+    `,
+  })
+  await expect(page.getByText('現在天氣')).toBeVisible({ timeout: 30_000 })
+}
+
+test('首頁沒有 critical/serious 等級的無障礙問題', async ({ page }) => {
+  await gotoReady(page)
   expect(report(await scan(page))).toEqual([])
 })
 
 test('搜尋後的狀態也沒有 critical/serious 等級的無障礙問題', async ({ page }) => {
-  await page.goto('/')
+  await gotoReady(page)
 
   const search = page.getByLabel('搜尋城市')
   await search.fill('Kaohsiung')
   await search.press('Enter')
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Kaohsiung')
+  await expect(page.getByText('現在天氣')).toBeVisible({ timeout: 30_000 })
 
   expect(report(await scan(page))).toEqual([])
 })
