@@ -205,7 +205,7 @@ export default function Home() {
           </div>
         )}
 
-        <section className="relative z-50 mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <section className="relative z-20 mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="animate-fade-in-left">
             <p className="mb-2 flex items-center gap-1.5 text-sm font-medium text-slate-600">
               <MapPin size={15} className="text-[#1769aa]" />
