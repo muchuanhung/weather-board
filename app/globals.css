@@ -216,8 +216,10 @@
 .weather-moon {
   display: inline-block;
   border-radius: 9999px;
-  background: #94a3b8;
-  box-shadow: inset -7px 3px 0 #f8fafc;
+  background: #64748b;
+  box-shadow:
+    inset -7px 3px 0 #ffffff,
+    0 0 10px rgba(100, 116, 139, 0.25);
   transform: rotate(-25deg);
 }
 .weather-partly {
