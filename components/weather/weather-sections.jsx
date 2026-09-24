@@ -1,6 +1,16 @@
 'use client'
 
-import { Activity, CloudRain, Gauge, Navigation, Shirt, Sunrise, Sunset, Wind } from 'lucide-react'
+import {
+  Activity,
+  CloudRain,
+  Droplets,
+  Gauge,
+  Navigation,
+  Shirt,
+  Sunrise,
+  Sunset,
+  Wind,
+} from 'lucide-react'
 
 import { WeatherIcon } from './weather-icons'
 
@@ -141,9 +151,9 @@ export function CurrentWeatherCard({ weather, todayForecast }) {
           <WeatherMetric icon={<CloudRain />} label="降雨機率" value={rainValue} />
           <WeatherMetric icon={<Wind />} label="風速" value={`${weather.windSpeed} km/h`} />
           <WeatherMetric
-            icon={<Gauge />}
-            label="氣壓"
-            value={`${weather.pressure} hPa`}
+            icon={<Droplets />}
+            label="濕度"
+            value={`${weather.humidity}%`}
             align="end"
           />
         </div>
@@ -242,11 +252,7 @@ export function HourlyForecast({ hourly }) {
                 <WeatherIcon kind={entry.kind} size={30} />
               </span>
               <span className="text-[11px] font-semibold sm:text-lg">{entry.temperature}°</span>
-              {index === 0 && (
-                <span className="rounded-full bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium whitespace-nowrap">
-                  現在
-                </span>
-              )}
+              {index === 0 && <span className="size-1.5 rounded-full bg-[#8fb8d4]" />}
             </div>
           ))}
         </div>
@@ -327,7 +333,7 @@ export function WeatherTip({ weather, todayForecast }) {
           </div>
         </div>
 
-        <p className="text-xs leading-6 text-slate-600 sm:text-sm">{tip}</p>
+        <p className="text-sm leading-7 text-slate-700 sm:text-base sm:leading-8">{tip}</p>
 
         {outfit && (
           <div className="mt-4 rounded-xl bg-slate-50 p-3 sm:mt-5 sm:p-4">
@@ -335,13 +341,15 @@ export function WeatherTip({ weather, todayForecast }) {
               <Shirt size={15} className="text-[#1769aa] sm:size-[17px]" />
               <p className="text-xs font-semibold text-slate-800 sm:text-sm">今日穿搭建議</p>
             </div>
-            <p className="mt-2 text-xs leading-6 text-slate-600 sm:text-sm">{outfit}</p>
+            <p className="mt-2 text-sm leading-7 text-slate-700 sm:text-base sm:leading-8">
+              {outfit}
+            </p>
           </div>
         )}
 
         <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-xs text-slate-500 sm:mt-5 sm:pt-4">
-          <span>濕度</span>
-          <span className="font-medium text-slate-800">{weather.humidity}%</span>
+          <span>氣壓</span>
+          <span className="font-medium text-slate-800">{weather.pressure} hPa</span>
         </div>
       </div>
     </aside>
