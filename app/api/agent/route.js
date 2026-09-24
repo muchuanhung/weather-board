@@ -246,12 +246,17 @@ export async function POST(request) {
     return NextResponse.json({ ok: false, error: '提問過長，請保持在 200 字以內' }, { status: 400 })
   }
 
+  const q = question.trim()
   const resolved = resolveCity(city)
+
   if (!resolved) {
-    return NextResponse.json({ ok: false, error: `找不到城市「${city}」` }, { status: 400 })
+    return NextResponse.json({
+      ok: true,
+      answer: `目前天氣小幫手只支援台灣縣市，還沒有「${city}」的資料。可以改搜台北、高雄等城市再問我。`,
+      mode: 'rules',
+    })
   }
 
-  const q = question.trim()
   const now = new Date()
   const weatherCache = new Map()
   const loadWeather = (resolvedCity) => {

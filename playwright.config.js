@@ -12,6 +12,10 @@ export default defineConfig({
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
   use: {
     baseURL,
+    // 固定 light，避免本機／runner OS dark mode 讓 slate 文字對比翻車
+    colorScheme: 'light',
+    // 關掉進場動畫，避免 axe color-contrast 掃到 opacity<1 假陽性
+    reducedMotion: 'reduce',
     trace: 'on-first-retry',
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],

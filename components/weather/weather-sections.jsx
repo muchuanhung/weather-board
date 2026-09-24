@@ -269,7 +269,7 @@ export function DailyForecast({ daily }) {
           <h2 className="font-semibold">未來 5 天</h2>
           <p className="mt-1 text-xs text-slate-500">每日天氣預測</p>
         </div>
-        <div className="flex items-center gap-2 pb-2 text-[10px] text-slate-400 sm:gap-3 sm:text-xs">
+        <div className="flex items-center gap-2 pb-2 text-[10px] text-slate-600 sm:gap-3 sm:text-xs">
           <div className="w-11 sm:w-24" />
           <div className="w-7 sm:w-16" />
           <div className="flex flex-1 items-center gap-2 sm:gap-4">
