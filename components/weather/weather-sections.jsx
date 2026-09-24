@@ -22,6 +22,28 @@ function uvLevelText(uv) {
   return '低'
 }
 
+const UV_SCALE = [
+  { label: '低', color: '#e9d5ff', width: '27.3%' },
+  { label: '中等', color: '#c4a3f5', width: '27.3%' },
+  { label: '高', color: '#9b6dea', width: '18.2%' },
+  { label: '很高', color: '#7139d4', width: '27.2%' },
+]
+
+function uvColor(uv) {
+  if (uv == null) return '#94a3b8'
+  if (uv >= 11) return '#5f3a9e'
+  if (uv >= 8) return '#7f56c4'
+  if (uv >= 6) return '#9b7cd4'
+  if (uv >= 3) return '#a98fd8'
+  return '#b9a4e0'
+}
+
+function uvPosition(uv) {
+  if (uv == null || Number.isNaN(Number(uv))) return null
+  const value = Math.min(Math.max(Number(uv), 0), 11)
+  return (value / 11) * 100
+}
+
 function toMinutes(timeStr) {
   const [h, m] = timeStr.split(':').map(Number)
   return h * 60 + m
@@ -219,12 +241,38 @@ export function SunCard({ weather }) {
           </div>
         </div>
 
-        <div className="mt-3 flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-1.5 text-[11px] text-slate-600 sm:mt-7 sm:py-2.5 sm:text-xs">
-          <Activity size={13} className="text-[#1769aa] sm:size-[15px]" />
-          紫外線指數{' '}
-          <strong className="ml-auto text-slate-900">
-            {uvLevelText(weather.uvIndex)} ({weather.uvIndex})
-          </strong>
+        <div className="mt-3 rounded-lg bg-slate-50 px-3 py-2.5 sm:mt-7 sm:px-4 sm:py-3">
+          <div className="flex items-center gap-2 text-[11px] text-slate-600 sm:text-xs">
+            <Activity size={13} className="text-[#1769aa] sm:size-[15px]" />
+            紫外線指數
+            <strong className="ml-auto" style={{ color: uvColor(weather.uvIndex) }}>
+              {uvLevelText(weather.uvIndex)} ({weather.uvIndex})
+            </strong>
+          </div>
+          <div className="relative mt-2 sm:mt-3">
+            <div
+              className="h-2 rounded-full"
+              style={{
+                background:
+                  'linear-gradient(to right, #ece7f5 0%, #d6cbec 18%, #b9a4e0 36%, #9b7cd4 55%, #7f56c4 73%, #5f3a9e 100%)',
+              }}
+            />
+            {uvPosition(weather.uvIndex) != null && (
+              <div
+                className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2"
+                style={{ left: uvPosition(weather.uvIndex) + '%' }}
+              >
+                <div className="size-3 rounded-full border-2 border-white bg-slate-700 shadow" />
+              </div>
+            )}
+          </div>
+          <div className="mt-2 hidden justify-between text-xs text-slate-500 sm:flex">
+            <span>0</span>
+            <span>3</span>
+            <span>6</span>
+            <span>8</span>
+            <span>11+</span>
+          </div>
         </div>
       </div>
     </aside>
