@@ -1,5 +1,7 @@
 # weather-board
 
+[![weather-board demo](docs/demo.gif)](https://weather-board-liart.vercel.app/)
+
 Wehelp 三人小組的氣象看板。
 
 ## 網站
