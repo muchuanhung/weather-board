@@ -133,13 +133,22 @@ export default function Home() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [cityMenuOpen])
 
-  function loadCity(name) {
-    setLoading(true)
+  function applyWeather(countyName, data) {
+    // 成功才換標題：失敗時維持原城市名稱（見 3a3c881）
+    setCity(countyName)
+    setCurrentWeather(data.current)
+    setDaily(data.dailyForecast ?? [])
+    setHourly(data.hourlyForecast ?? [])
+  }
+
+  // countyName 必須是 resolveCity 正規化後的 CWA 縣市全名
+  function loadCity(countyName) {
+    latestCityRef.current = countyName
     setErrorMsg('')
 
     const cached = weatherCacheRef.current.get(countyName)
     if (cached) {
-      applyWeather(cached)
+      applyWeather(countyName, cached)
       setLoading(false)
       setReady(true)
       return
@@ -152,15 +161,11 @@ export default function Home() {
         if (latestCityRef.current !== countyName) return
         // 502／缺 key 時保留原本 state，避免 current 變 undefined 把畫面炸掉
         if (data.error || !data.current) {
-          setErrorMsg(data.message || '氣象資料取得失敗，請稍後再試')
-        } else {
-          setCity(name)
-          setCurrentWeather(data.current)
-          setDaily(data.dailyForecast ?? [])
-          setHourly(data.hourlyForecast ?? [])
+          setErrorMsg(data.message || FETCH_ERROR)
+          return
         }
         weatherCacheRef.current.set(countyName, data)
-        applyWeather(data)
+        applyWeather(countyName, data)
       })
       .catch(() => {
         if (latestCityRef.current === countyName) setErrorMsg(FETCH_ERROR)
