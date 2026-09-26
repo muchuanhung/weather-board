@@ -1,6 +1,8 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test } from '@playwright/test'
 
+import { mockWeatherOk } from './mock-weather.js'
+
 // 通過不代表無障礙。這裡的目的是防止已經修好的問題被改回去。
 const BLOCKING = ['critical', 'serious']
 
@@ -28,6 +30,7 @@ function report({ violations, incomplete }) {
 }
 
 async function gotoReady(page) {
+  await mockWeatherOk(page)
   await page.goto('/')
   // 只在 a11y 掃關掉進場動畫（不改 globals.css），避免 axe 掃到 opacity<1 假陽性
   await page.addStyleTag({

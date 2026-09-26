@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { ChevronDown, MapPin, Search, Sunrise } from 'lucide-react'
+import { ChevronDown, Search, Sunrise } from 'lucide-react'
 
 import { resolveCity } from '@/lib/city-map'
 import {
@@ -133,16 +133,8 @@ export default function Home() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [cityMenuOpen])
 
-  function applyWeather(data) {
-    setCurrentWeather(data.current)
-    setDaily(data.dailyForecast ?? [])
-    setHourly(data.hourlyForecast ?? [])
-  }
-
-  // countyName 必須是 resolveCity 正規化後的 CWA 縣市全名
-  function loadCity(countyName) {
-    latestCityRef.current = countyName
-    setCity(countyName)
+  function loadCity(name) {
+    setLoading(true)
     setErrorMsg('')
 
     const cached = weatherCacheRef.current.get(countyName)
@@ -160,8 +152,12 @@ export default function Home() {
         if (latestCityRef.current !== countyName) return
         // 502／缺 key 時保留原本 state，避免 current 變 undefined 把畫面炸掉
         if (data.error || !data.current) {
-          setErrorMsg(data.message || FETCH_ERROR)
-          return
+          setErrorMsg(data.message || '氣象資料取得失敗，請稍後再試')
+        } else {
+          setCity(name)
+          setCurrentWeather(data.current)
+          setDaily(data.dailyForecast ?? [])
+          setHourly(data.hourlyForecast ?? [])
         }
         weatherCacheRef.current.set(countyName, data)
         applyWeather(data)
@@ -249,11 +245,7 @@ export default function Home() {
         )}
 
         <section className="relative z-20 mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div className="animate-fade-in-left">
-            <p className="mb-2 flex items-center gap-1.5 text-sm font-medium text-slate-700">
-              <MapPin size={15} className="text-[#1769aa]" />
-              目前位置
-            </p>
+          <div className="animate-fade-in-left relative z-10">
             <div className="relative flex items-center gap-2" ref={cityMenuRef}>
               <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{city}</h1>
               <button
