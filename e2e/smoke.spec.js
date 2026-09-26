@@ -24,5 +24,5 @@ test('搜尋城市後，主標題會換成輸入的城市', async ({ page }) => 
   await search.fill('Kaohsiung')
   await search.press('Enter')
 
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Kaohsiung')
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('高雄市')
 })

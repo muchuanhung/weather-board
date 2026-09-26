@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { ChevronDown, Search, Sunrise } from 'lucide-react'
 
+import { resolveCity } from '@/lib/city-map'
 import {
   CurrentWeatherCard,
   DailyForecast,
@@ -37,14 +38,21 @@ const CITY_OPTIONS = [
   '連江縣',
 ]
 
+const DEFAULT_CITY = '臺北市'
+const FETCH_ERROR = '氣象資料取得失敗，請稍後再試'
+
 export default function Home() {
-  const [city, setCity] = useState('Taipei')
+  const [city, setCity] = useState(DEFAULT_CITY)
   const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
   const [ready, setReady] = useState(false)
   const [cityMenuOpen, setCityMenuOpen] = useState(false)
   const cityMenuRef = useRef(null)
+  // 以 CWA 縣市全名為 key 快取回應：taipei／台北／臺北 都會落在「臺北市」同一格，只打一次 API
+  const weatherCacheRef = useRef(new Map())
+  // 最後一次要求的縣市；較早送出的請求晚回來時直接丟掉，避免蓋掉新結果
+  const latestCityRef = useRef(DEFAULT_CITY)
 
   const [currentWeather, setCurrentWeather] = useState({
     temperature: '--',
@@ -90,23 +98,27 @@ export default function Home() {
     return () => clearInterval(timer)
   }, [])
 
+  // 先載入預設城市，同時請求定位授權；授權後用 Nominatim 反查縣市再切換
   useEffect(() => {
-    fetch('/api/weather?city=Taipei')
-      .then((res) => res.json())
-      .then((data) => {
-        // 502／缺 key 時保留初始 state，避免 current 變 undefined 把畫面炸掉
-        if (data.error || !data.current) {
-          setReady(true)
-          return
-        }
-        setCurrentWeather(data.current)
-        setDaily(data.dailyForecast ?? [])
-        setHourly(data.hourlyForecast ?? [])
-        setReady(true)
-      })
-      .catch(() => {
-        setReady(true)
-      })
+    loadCity(DEFAULT_CITY)
+    if (!('geolocation' in navigator)) return
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=10&accept-language=zh-TW&lat=${coords.latitude}&lon=${coords.longitude}`
+        fetch(url)
+          .then((res) => res.json())
+          .then((data) => {
+            // 使用者已經自己換過城市就不覆蓋
+            if (latestCityRef.current !== DEFAULT_CITY) return
+            const { county, city: cityName, state } = data.address ?? {}
+            const resolved = [county, cityName, state].map(resolveCity).find(Boolean)
+            if (resolved) loadCity(resolved.countyName)
+          })
+          .catch(() => {})
+      },
+      () => {}, // 拒絕授權或逾時：維持預設城市
+      { timeout: 10_000, maximumAge: 10 * 60 * 1000 }
+    )
   }, [])
 
   // 點選單外面就收起來
@@ -121,25 +133,47 @@ export default function Home() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [cityMenuOpen])
 
-  function loadCity(name) {
-    setLoading(true)
+  function applyWeather(countyName, data) {
+    // 成功才換標題：失敗時維持原城市名稱（見 3a3c881）
+    setCity(countyName)
+    setCurrentWeather(data.current)
+    setDaily(data.dailyForecast ?? [])
+    setHourly(data.hourlyForecast ?? [])
+  }
+
+  // countyName 必須是 resolveCity 正規化後的 CWA 縣市全名
+  function loadCity(countyName) {
+    latestCityRef.current = countyName
     setErrorMsg('')
-    fetch(`/api/weather?city=${encodeURIComponent(name)}`)
+
+    const cached = weatherCacheRef.current.get(countyName)
+    if (cached) {
+      applyWeather(countyName, cached)
+      setLoading(false)
+      setReady(true)
+      return
+    }
+
+    setLoading(true)
+    fetch(`/api/weather?city=${encodeURIComponent(countyName)}`)
       .then((res) => res.json())
       .then((data) => {
+        if (latestCityRef.current !== countyName) return
+        // 502／缺 key 時保留原本 state，避免 current 變 undefined 把畫面炸掉
         if (data.error || !data.current) {
-          setErrorMsg(data.message || '氣象資料取得失敗，請稍後再試')
-        } else {
-          setCity(name)
-          setCurrentWeather(data.current)
-          setDaily(data.dailyForecast ?? [])
-          setHourly(data.hourlyForecast ?? [])
+          setErrorMsg(data.message || FETCH_ERROR)
+          return
         }
-        setLoading(false)
+        weatherCacheRef.current.set(countyName, data)
+        applyWeather(countyName, data)
       })
       .catch(() => {
-        setErrorMsg('氣象資料取得失敗，請稍後再試')
+        if (latestCityRef.current === countyName) setErrorMsg(FETCH_ERROR)
+      })
+      .finally(() => {
+        if (latestCityRef.current !== countyName) return
         setLoading(false)
+        setReady(true)
       })
   }
 
@@ -147,12 +181,22 @@ export default function Home() {
     event.preventDefault()
     const trimmed = query.trim()
     if (!trimmed) return
-    loadCity(trimmed)
     setQuery('')
+    const resolved = resolveCity(trimmed)
+    if (!resolved) {
+      setErrorMsg(
+        `找不到城市「${trimmed}」，請用臺灣縣市名稱或常見英文拼音，例如 Taipei、Kaohsiung、台中。`
+      )
+      return
+    }
+    // 跟目前顯示的是同一個縣市就不重打
+    if (resolved.countyName === city) return
+    loadCity(resolved.countyName)
   }
 
   function selectCity(name) {
     setCityMenuOpen(false)
+    if (name === city) return
     loadCity(name)
   }
 
@@ -194,7 +238,7 @@ export default function Home() {
       </header>
 
       <div className="mx-auto max-w-7xl px-5 py-7 lg:px-8 lg:py-10">
-        {loading && (
+        {ready && loading && (
           <div className="mb-5 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
             載入中，正在取得最新天氣資料...
           </div>
