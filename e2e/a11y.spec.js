@@ -54,7 +54,7 @@ test('搜尋後的狀態也沒有 critical/serious 等級的無障礙問題', as
   const search = page.getByLabel('搜尋城市')
   await search.fill('Kaohsiung')
   await search.press('Enter')
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Kaohsiung')
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('高雄市')
   await expect(page.getByText('現在天氣')).toBeVisible({ timeout: 30_000 })
 
   expect(report(await scan(page))).toEqual([])
